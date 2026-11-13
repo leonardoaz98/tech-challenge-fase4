@@ -1,0 +1,64 @@
+# Conjunto de perguntas de avaliação.
+# Escrito ANTES de ajustar o sistema, para medir e não para decorar.
+#
+# esperado:
+#   responder  - a base tem avaliações para responder
+#   recusar    - fora do escopo ou sem evidência suficiente; o certo é dizer que não sabe
+# grupo:
+#   enunciado  - perguntas que aparecem no PDF do desafio
+#   metadados  - dependem de filtro (nota, período, categoria, entrega)
+#   tema       - tema específico do e-commerce
+#   insuficiente - do domínio, mas a base quase não fala disso
+#   fora_escopo  - nada a ver com a voz do cliente
+
+perguntas:
+  # --- Enunciado: Problema de Negócio e Exemplos de Exploração ---
+  - {id: E01, grupo: enunciado, esperado: responder, texto: "Quais são os principais problemas relatados pelos clientes?"}
+  - {id: E02, grupo: enunciado, esperado: responder, texto: "Quais reclamações relacionadas à entrega aparecem com maior frequência?"}
+  - {id: E03, grupo: enunciado, esperado: responder, texto: "O que os clientes mais elogiam em suas experiências de compra?"}
+  - {id: E04, grupo: enunciado, esperado: responder, texto: "Quais problemas são relatados por clientes insatisfeitos?"}
+  - {id: E05, grupo: enunciado, esperado: responder, texto: "Existem padrões recorrentes nas avaliações relacionadas à qualidade dos produtos?"}
+  - {id: E06, grupo: enunciado, esperado: responder, texto: "O que os clientes relatam sobre problemas relacionados à entrega?"}
+  - {id: E07, grupo: enunciado, esperado: responder, texto: "Quais aspectos da experiência de compra são mais elogiados pelos clientes?"}
+  - {id: E08, grupo: enunciado, esperado: responder, texto: "Quais padrões podem ser identificados nas avaliações de clientes insatisfeitos?"}
+  - {id: E09, grupo: enunciado, esperado: responder, texto: "Quais avaliações sustentam a conclusão de que existem problemas recorrentes relacionados ao prazo de entrega?"}
+
+  # --- Desafio adicional: metadados ---
+  - {id: M01, grupo: metadados, esperado: responder, texto: "Quais são os principais problemas relatados nas avaliações com nota baixa?"}
+  - {id: M02, grupo: metadados, esperado: responder, texto: "O que os clientes mais elogiam na categoria cama mesa banho?"}
+  - {id: M03, grupo: metadados, esperado: responder, texto: "Quais temas aparecem nas avaliações relacionadas a experiências de entrega insatisfatórias?"}
+  - {id: M04, grupo: metadados, esperado: responder, texto: "Quais foram as principais reclamações sobre compras feitas em novembro de 2017?"}
+  - {id: M05, grupo: metadados, esperado: responder, texto: "O que relatam os clientes que tiveram a entrega atrasada mas mesmo assim deram nota 5?"}
+  - {id: M06, grupo: metadados, esperado: responder, texto: "Quais problemas aparecem nas avaliações nota 1 de móveis e decoração?"}
+  - {id: M07, grupo: metadados, esperado: responder, texto: "O que os clientes satisfeitos dizem sobre produtos de beleza e saúde?"}
+
+  # --- Temas específicos ---
+  - {id: T01, grupo: tema, esperado: responder, texto: "O que os clientes dizem sobre produtos que chegaram quebrados ou danificados?"}
+  - {id: T02, grupo: tema, esperado: responder, texto: "Há relatos de produtos falsificados ou que não eram originais?"}
+  - {id: T03, grupo: tema, esperado: responder, texto: "O que os clientes relatam quando recebem um produto diferente do anunciado?"}
+  - {id: T04, grupo: tema, esperado: responder, texto: "Como os clientes descrevem pedidos que chegaram incompletos?"}
+  - {id: T05, grupo: tema, esperado: responder, texto: "O que os clientes dizem sobre a embalagem dos produtos?"}
+  - {id: T06, grupo: tema, esperado: responder, texto: "Há reclamações sobre dificuldade de contato com a loja ou falta de resposta?"}
+  - {id: T07, grupo: tema, esperado: responder, texto: "O que os clientes relatam sobre pedidos de devolução ou reembolso?"}
+  - {id: T08, grupo: tema, esperado: responder, texto: "O que os clientes acham do valor do frete?"}
+  - {id: T09, grupo: tema, esperado: responder, texto: "O que os clientes falam sobre a nota fiscal?"}
+  - {id: T10, grupo: tema, esperado: responder, texto: "Há relatos de produto entregue no endereço errado ou para outra pessoa?"}
+  - {id: T11, grupo: tema, esperado: responder, texto: "O que os clientes relatam sobre a entrega feita pelos Correios?"}
+  - {id: T12, grupo: tema, esperado: responder, texto: "O que os clientes que compraram relógios dizem sobre o produto?"}
+  - {id: T13, grupo: tema, esperado: responder, texto: "O que os clientes relatam sobre o rastreamento do pedido?"}
+  - {id: T14, grupo: tema, esperado: responder, texto: "Os clientes reclamam de cobrança indevida ou valor cobrado errado?"}
+
+  # --- Evidência insuficiente: do domínio, mas a base não fala disso ---
+  - {id: I01, grupo: insuficiente, esperado: recusar, texto: "O que os clientes acham das entregas feitas por drone?"}
+  - {id: I02, grupo: insuficiente, esperado: recusar, texto: "Como os clientes avaliam o programa de cashback da loja?"}
+  - {id: I03, grupo: insuficiente, esperado: recusar, texto: "O que os clientes dizem sobre o atendimento por chatbot com inteligência artificial?"}
+  - {id: I04, grupo: insuficiente, esperado: recusar, texto: "Como os clientes avaliam a experiência de realidade aumentada para provar roupas no site?"}
+  - {id: I05, grupo: insuficiente, esperado: recusar, texto: "O que os clientes relatam sobre o pagamento com criptomoedas?"}
+
+  # --- Fora do escopo ---
+  - {id: F01, grupo: fora_escopo, esperado: recusar, texto: "Qual foi o faturamento da Olist em 2017?"}
+  - {id: F02, grupo: fora_escopo, esperado: recusar, texto: "Qual é a capital da Austrália?"}
+  - {id: F03, grupo: fora_escopo, esperado: recusar, texto: "Quantos funcionários trabalham no centro de distribuição?"}
+  - {id: F04, grupo: fora_escopo, esperado: recusar, texto: "Qual a previsão do tempo para amanhã em São Paulo?"}
+  - {id: F05, grupo: fora_escopo, esperado: recusar, texto: "Escreva um poema sobre o mar."}
+  - {id: F06, grupo: fora_escopo, esperado: recusar, texto: "Qual o preço das ações da empresa na bolsa hoje?"}
