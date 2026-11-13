@@ -1,0 +1,20 @@
+{
+  "documentos": 36038,
+  "com_pelo_menos_um_tema": 0.763,
+  "por_tema": {
+    "atraso": 2232,
+    "nao_entregue": 4144,
+    "incompleto": 1582,
+    "produto_errado": 836,
+    "defeito_avaria": 1327,
+    "qualidade_ruim": 1456,
+    "atendimento_ruim": 635,
+    "devolucao_reembolso": 1963,
+    "embalagem": 1364,
+    "frete_preco": 1752,
+    "entrega_rapida": 10692,
+    "produto_bom": 7766,
+    "recomenda": 6360,
+    "atendimento_bom": 427
+  }
+}
