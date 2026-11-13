@@ -51,8 +51,9 @@ CANDIDATOS_RERANK = 60  # quantos candidatos fundidos vão para o reranker
 EVIDENCIAS_CONTEXTO = 15  # avaliações enviadas ao LLM
 MMR_LAMBDA = 0.7  # 1 = só relevância, 0 = só diversidade
 # Limiares sobre o score do reranker (logit). Calibrados em reports/calibracao_limiar.json.
-LIMIAR_RELEVANCIA = 0.0  # abaixo disso a avaliação não conta como evidência
+LIMIAR_RELEVANCIA = -1.75  # calibrado em reports/calibracao_limiar.json; abaixo disso a avaliação não conta como evidência
 MIN_EVIDENCIAS = 3  # menos que isso = evidência insuficiente
+MIN_UNIVERSO_FREQUENCIA = 30  # abaixo disso, cada avaliação mexe 3+ pontos percentuais na contagem de temas
 
 # --- LLM (API da Anthropic) -----------------------------------------------
 MODELO_LLM = "claude-opus-5-5"
