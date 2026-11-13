@@ -1,0 +1,21 @@
+# Python 3.11. Versões fixas para a execução ser reproduzível.
+# torch na versão só-CPU (menor, sem GPU): o índice inteiro roda em CPU.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.15.0
+sentence-transformers==6.3.0
+transformers==5.23.0
+rank-bm25==0.2.2
+anthropic==2.8.0
+python-dotenv==1.2.4
+pandas==3.1.1
+numpy==2.4.6
+pyarrow==26.0.1
+kagglehub==1.0.3
+Unidecode==1.4.0
+PyYAML==6.0.3
+streamlit==1.67.0
+matplotlib==3.11.2
+pytest==9.2.0
+jupyter==1.1.1
+nbconvert==7.17.2
+ipykernel==7.4.0

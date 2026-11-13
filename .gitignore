@@ -1,0 +1,24 @@
+# Ambiente
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+.env
+
+# Dados e artefatos regeráveis (python -m src.run_pipeline)
+data/raw/
+data/processed/
+data/index/
+logs/
+
+# Arquivos locais de trabalho (fora do repositório público)
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.mcp.json
+*.pdf
+PLANO_DE_ACAO_FASE4.*
+
+# Arquivos temporários do Office
+~$*
