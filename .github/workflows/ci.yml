@@ -1,0 +1,48 @@
+# Roda a cada pull request e a cada push na main.
+# Prova que a base de conhecimento e os temas saem iguais numa máquina limpa e que
+# os testes passam. O índice vetorial (36 mil embeddings em CPU) e as etapas com LLM
+# ficam fora do CI por tempo e custo; rodam localmente com python -m src.run_pipeline.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Instalar dependências (versões fixas)
+        run: pip install -r requirements.txt
+
+      - name: Testes de unidade
+        run: python -m pytest -q tests
+
+      - name: Base de conhecimento e temas a partir dos dados brutos
+        run: |
+          python -m src.ingestion.baixar_dados
+          python -m src.preprocessing.base_conhecimento
+          python -m src.temas.temas
+
+      - name: Funil e temas batem com a referência versionada
+        run: python -m src.checar_resultados
+
+      - name: Guardar funil e log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: execucao-${{ github.run_number }}
+          path: |
+            logs/
+            reports/funil.json
+            reports/temas_resumo.json
