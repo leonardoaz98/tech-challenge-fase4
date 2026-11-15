@@ -9,8 +9,8 @@ Tech Challenge da Fase 4 da pós em IA (FIAP). Base: [Brazilian E-Commerce Publi
 - **36.038 avaliações** viram documentos pesquisáveis, cada uma com nota, período, categoria e status da entrega.
 - **Recusa honesta (modo sem LLM):** recusa 100% das perguntas fora do escopo e sem evidência; responde 90% das que deveria responder (27 de 30). Detalhes na [seção 9](#9-avaliação).
 - **Frequência de verdade:** "principais problemas" é contado nas 36 mil avaliações, não nas 15 recuperadas. Com nota 1 ou 2, *produto não entregue* aparece em 32,6% dos textos.
-- Roda em CPU, sem GPU e sem conta no Kaggle. A chave da Anthropic só é necessária para a resposta gerada.
-<!-- RESULTADOS_LLM: métricas de recuperação e fidelidade entram após a execução com chave -->
+- **Custo zero:** o LLM roda localmente (Qwen2.5 7B via [Ollama](https://ollama.com)), sem chave nem cobrança por pergunta. Busca e índice rodam em CPU; não precisa de conta no Kaggle.
+<!-- RESULTADOS_LLM -->
 
 | | |
 |---|---|
@@ -46,14 +46,15 @@ flowchart TB
         P --> B[Índice BM25]
     end
     subgraph ON["Online: cada pergunta (app Streamlit ou python -m src.pipeline)"]
-        Q[Pergunta do gestor] --> A{Análise da pergunta<br/>Claude}
+        Q[Pergunta do gestor] --> A{Análise da pergunta<br/>LLM local: assunto, tipo, reescritas<br/>regras: filtros de metadados}
         A -- fora do escopo --> R1[Recusa explicada]
-        A -- escopo, tipo, filtros, reescritas --> H[Busca híbrida<br/>densa + BM25 + fusão RRF]
+        A -- consultas + filtros --> H[Busca híbrida<br/>densa + BM25 + fusão RRF]
         H --> RR[Reranker cross-encoder<br/>+ limiar calibrado + MMR]
         RR -- menos de 3 evidências --> R2[Recusa: evidência insuficiente]
         RR --> C[Contexto: avaliações numeradas R1..Rn<br/>+ frequência de temas se a pergunta pede contagem]
-        C --> G[Geração com citações<br/>Claude, saída JSON validada]
-        G --> V[Verificação das citações]
+        C --> G[Geração com citações<br/>LLM local, JSON restrito por esquema]
+        G -- menos de 3 avaliações sobre o assunto --> R3[Recusa: evidência não trata do assunto]
+        G --> V[Verificação: citações e números<br/>ranking de temas escrito pelo código]
         V --> S[Resposta + insights + evidências]
     end
     E -.-> H
@@ -63,12 +64,12 @@ flowchart TB
 
 | Etapa do enunciado | Onde acontece | Arquivo |
 |---|---|---|
-| Processamento da pergunta | Escopo, tipo, filtros e reescritas | [`analise_pergunta.py`](src/retrieval/analise_pergunta.py) |
+| Processamento da pergunta | Assunto, tipo e reescritas (LLM); filtros (regras) | [`analise_pergunta.py`](src/retrieval/analise_pergunta.py) · [`filtros.py`](src/retrieval/filtros.py) |
 | Representação vetorial | `multilingual-e5-base`, prefixos `query:` / `passage:` | [`embeddings.py`](src/indexing/embeddings.py) |
 | Recuperação das avaliações | Densa + BM25 com fusão RRF, pré-filtro de metadados | [`busca.py`](src/retrieval/busca.py) · [`filtros.py`](src/retrieval/filtros.py) |
 | Seleção dos mais relevantes | Reranker, limiar calibrado, MMR, deduplicação | [`busca.py`](src/retrieval/busca.py) |
 | Construção do contexto | Avaliações numeradas + tabela de temas | [`resposta.py`](src/generation/resposta.py) |
-| Geração da resposta | Claude com saída estruturada e citações | [`resposta.py`](src/generation/resposta.py) · [`llm.py`](src/generation/llm.py) |
+| Geração da resposta | LLM local com saída estruturada e citações | [`resposta.py`](src/generation/resposta.py) · [`llm.py`](src/generation/llm.py) |
 | Resposta fundamentada | Verificação das citações; recusa sem evidência | [`pipeline.py`](src/pipeline.py) |
 
 ## 3. Tecnologias e bibliotecas
@@ -81,7 +82,7 @@ flowchart TB
 | Fusão | Reciprocal Rank Fusion | Combina rankings pela posição, sem calibrar escalas diferentes (cosseno × BM25) |
 | Reranker | [`cross-encoder/mmarco-mMiniLMv2-L12-H384-v1`](https://huggingface.co/cross-encoder/mmarco-mMiniLMv2-L12-H384-v1) | Multilíngue (treinado no mMARCO, que inclui português), pequeno o bastante para CPU |
 | Armazenamento vetorial | Matriz numpy + Parquet | Ver [decisão D3](#11-decisões-técnicas) |
-| LLM | Claude Opus 5.5 (`claude-opus-5-5`, API da Anthropic) | Qualidade em português, saída JSON validada por esquema, segue regras de citação |
+| LLM | [Qwen2.5 7B](https://ollama.com/library/qwen2.5) (`qwen2.5:7b`, quantizado em 4 bits) via [Ollama](https://ollama.com) | Gratuito e local; bom em português para o tamanho; o Ollama restringe a saída a um esquema JSON. Ver [decisão D11](#11-decisões-técnicas) |
 | Interface | Streamlit | Mostra resposta, evidências e cada etapa do pipeline |
 | Dados | pandas, pyarrow, kagglehub | Download sem chave, Parquet para a base |
 | Qualidade | pytest, GitHub Actions | Testes e reconstrução da base a cada pull request |
@@ -169,23 +170,31 @@ Cada avaliação é **um documento inteiro, sem chunking**: nenhum comentário p
 | Busca + reranking de uma pergunta exploratória | ~1,3 s |
 | Pergunta de frequência (busca + temas + exemplos) | ~2,4 s |
 
-Os tempos de consulta foram medidos com os modelos já carregados e não incluem a chamada ao Claude.
+Os tempos de consulta foram medidos com os modelos já carregados e não incluem as chamadas ao LLM. Com o LLM (GTX 1060 6 GB), uma pergunta leva de 25 a 65 s: ~9 s na análise e de 10 a 55 s na geração. A primeira pergunta de cada processo leva ~2 min a mais, para carregar os modelos.
 
 ## 5. Estratégia do pipeline RAG
 
 ### 5.1 Transformação da pergunta
 
-O Claude lê a pergunta e devolve, em JSON validado por esquema:
+O LLM lê a pergunta e devolve, em JSON restrito por esquema:
 
 | Saída | Para quê | Exemplo |
 |---|---|---|
-| `no_escopo` | Pergunta fora do que as avaliações contêm nem chega na busca | "faturamento da Olist" → fora |
+| `motivo` | Uma frase sobre o que é a pergunta, escrita **antes** da classificação | "busca entender o que os clientes relatam sobre a nota fiscal" |
+| `assunto` | Só `experiencia_de_compra` chega na busca; `dados_da_empresa`, `conhecimento_geral` e `tarefa_de_texto` são recusados | "faturamento da Olist" → `dados_da_empresa` |
 | `tipo` | Muda a estratégia | `frequencia` → aciona a contagem de temas |
 | `tipo_tema` | Foco em problema ou elogio | "o que mais elogiam" → `elogio` |
-| `filtros` | Pré-filtro de metadados | "nota baixa" → nota 1 a 2 |
-| `consultas` | 2 ou 3 reescritas no vocabulário do cliente | "problemas de entrega" → "não recebi meu pedido até hoje", "chegou muito atrasado" |
+| `consultas` | 2 ou 3 reescritas no vocabulário do cliente | "nota fiscal" → "não recebi a nota fiscal" |
 
 As reescritas existem porque o gestor e o cliente usam palavras diferentes para a mesma coisa. A pergunta original continua sendo a primeira consulta.
+
+**Por que "assunto" e não "está no escopo: sim/não".** Com a pergunta booleana, o modelo de 7B marcava "O que os clientes falam sobre a nota fiscal?" como fora do escopo, porque *achava* que a base não falava disso. Escolher entre rótulos com exemplos é uma tarefa mais fácil para um modelo pequeno, e o prompt deixa claro que quem decide se há evidência é a busca. Nas 20 perguntas de calibração, a classificação acertou todas.
+
+**Filtros por regras, não pelo LLM.** O modelo inventava recortes que a pergunta não pedia (o período inteiro da base, status de entrega). Os filtros vêm de regras ancoradas no texto ([`filtros.py`](src/retrieval/filtros.py), testadas em [`test_filtros.py`](tests/test_filtros.py)): "nota baixa" e "insatisfeitos" → nota 1 a 2; "satisfeitos" → 4 a 5; "nota 5" → 5; "novembro de 2017" → o mês; "entrega atrasada" → `atrasado`; "entregas insatisfatórias" → `atrasado` + `nao_entregue`; nome de categoria citado → categoria. Os filtros marcados na tela do app têm prioridade.
+
+**Pergunta que é só um recorte.** Em "O que os clientes satisfeitos dizem sobre produtos de beleza e saúde?", depois de tirar os filtros (nota 4 a 5, categoria beleza e saúde) não sobra assunto. A pergunta vira um retrato do recorte e é respondida pela frequência de temas dentro dele.
+
+**Contagem só quando a pergunta pede.** A contagem de temas entra quando a pergunta pede ranking de forma explícita ("principais", "mais comuns", "padrões") ou quando é só um recorte. O modelo marcava "Há reclamações sobre manual de instruções?" como pergunta de frequência, e a tabela de temas não fala de manual.
 
 ### 5.2 Recuperação semântica
 
@@ -232,15 +241,22 @@ Avaliações recuperadas:
 
 ### 5.6 Geração e verificação
 
-O Claude responde em JSON com `resposta` (texto com [Rn]), `insights` (cada um com as avaliações que o sustentam), `suficiente` e `lacunas`. Regras do prompt ([`resposta.py`](src/generation/resposta.py)): só o contexto, citação em cada afirmação, números só da tabela de temas, dizer quando a evidência não basta.
+Um modelo de 7B não segue bem regras escritas no prompt (citar cada frase, não calcular). Por isso as garantias estão na **estrutura** da resposta, não no prompt ([`resposta.py`](src/generation/resposta.py)):
 
-Depois da geração, o código confere cada citação: [Rn] que não existe no contexto é removido e contado como citação inválida (métrica na seção 9).
+| Garantia | Como |
+|---|---|
+| Toda conclusão tem evidência | Cada insight traz a lista de avaliações que o sustentam. O esquema só aceita os rótulos que existem no contexto (`R1`..`Rn`) e exige pelo menos um. O **texto final é montado pelo código** a partir dos insights, com as citações |
+| A evidência trata do assunto | Antes dos insights, o modelo lista quais avaliações falam *explicitamente* do assunto da pergunta. Com menos de 3, o sistema recusa (barreira 4 da seção 7) |
+| Números corretos | O ranking de temas, com contagens e percentuais, é **escrito pelo código** a partir da contagem. Percentual escrito pelo modelo é removido e contado. Antes dessa mudança, o modelo somava percentuais da tabela, e errava a soma |
+| Citação inexistente | [Rn] fora do contexto no resumo é removido e contado (métrica na seção 9) |
+
+A ordem dos campos no JSON é proposital: assunto, avaliações sobre o assunto, insights, resumo, lacunas. O modelo gera nessa ordem, então decide quais avaliações servem **antes** de escrever as conclusões.
 
 ## 6. Respostas fundamentadas em evidências
 
 Cada resposta traz:
 
-1. o texto com citações [R1][R4] após cada afirmação;
+1. um resumo e as conclusões, cada uma seguida das citações [R1][R4];
 2. os insights, cada um com a lista das avaliações que o sustentam;
 3. a tabela das avaliações recuperadas com `review_id`, nota, categoria, entrega e score do reranker;
 4. nas perguntas de frequência, a contagem de temas e o universo sobre o qual ela foi feita.
@@ -249,14 +265,15 @@ No app, cada insight abre e mostra as avaliações citadas. O painel "Por dentro
 
 ## 7. Perguntas sem evidência suficiente
 
-Três barreiras, em ordem:
+Quatro barreiras, em ordem:
 
 | Situação | Barreira | Resposta |
 |---|---|---|
-| Pergunta fora do escopo ("capital da Austrália", "faturamento") | O Claude marca `no_escopo = false` antes da busca | Recusa com o motivo |
+| Pergunta fora do escopo ("capital da Austrália", "faturamento") | O LLM classifica o assunto como fora da experiência de compra, antes da busca | Recusa com o motivo |
 | Nenhuma avaliação relevante ("entregas por drone") | Menos de 3 avaliações acima do limiar do reranker | Recusa **sem chamar o LLM de geração**: o modelo não tem chance de improvisar |
 | Pergunta de frequência com filtros que deixam poucas avaliações | Universo filtrado com menos de 30 avaliações com texto | Recusa: um percentual sobre 20 avaliações muda 5 pontos com cada uma |
-| Evidência parcial | O prompt manda marcar `suficiente = false` e explicar em `lacunas` | Resposta com ressalva explícita |
+| O reranker deixou passar avaliações que não tratam do assunto ("restaurante da loja" traz "recomendo a loja") | O modelo lista as avaliações que falam explicitamente do assunto; com menos de 3, o código recusa | Recusa explicada |
+| Evidência parcial | O modelo descreve em `lacunas` o que as avaliações não permitem afirmar | Resposta com ressalva explícita |
 
 Perguntas de frequência ("quais os principais problemas?") não passam pelo limiar do reranker: elas não têm um assunto único para ele medir. A resposta vem da contagem de temas no universo filtrado, e as evidências são exemplos de cada tema.
 
@@ -273,7 +290,7 @@ Regra: responde se pelo menos 3 avaliações têm score do reranker acima do lim
 
 ![Calibração do limiar](images/calibracao_limiar.png)
 
-As três que o limiar sozinho não recusa: "salário médio de um entregador", "traduza bom dia" e "restaurante da loja". As duas primeiras estão fora do escopo e são barradas antes, pela análise da pergunta com o Claude; a terceira é um caso em que a recusa depende do modelo marcar `suficiente = false`. A pergunta "responder" de menor score (tamanho das roupas, −1,58) ficou perto do limiar: as duas classes se sobrepõem, e o limiar não separa tudo sozinho. Por isso são três barreiras, não uma. Dados por pergunta em [`reports/calibracao_limiar.json`](reports/calibracao_limiar.json).
+As três que o limiar sozinho não recusa: "salário médio de um entregador", "traduza bom dia" e "restaurante da loja". As duas primeiras estão fora do escopo e são barradas antes, pela análise da pergunta com o LLM. A terceira é barrada na geração: o modelo aponta quais avaliações falam do assunto, e nenhuma fala de restaurante. A pergunta "responder" de menor score (tamanho das roupas, −1,58) ficou perto do limiar: as duas classes se sobrepõem, e o limiar não separa tudo sozinho. Por isso são três barreiras, não uma. Dados por pergunta em [`reports/calibracao_limiar.json`](reports/calibracao_limiar.json).
 
 **Uma correção feita durante o desenvolvimento.** Na primeira versão, o reranker comparava o enunciado inteiro com as avaliações. Com ela, o sistema sem LLM recusava 53% das perguntas que deveria responder no conjunto de avaliação, inclusive perguntas do enunciado. Duas mudanças: o reranker passou a usar o núcleo da pergunta, e perguntas de frequência passaram a depender da contagem de temas (acima). O limiar foi recalibrado **só** no conjunto de calibração. A mudança foi motivada pelo resultado no conjunto de avaliação, e registramos isso aqui porque deixa a medida da seção 9 um pouco otimista.
 
@@ -337,22 +354,22 @@ Modo sem LLM (análise da pergunta por regras, sem decisão de escopo). Arquivo:
 
 As 3 recusas indevidas: E09 ("Quais avaliações sustentam a conclusão de que existem problemas recorrentes relacionados ao prazo de entrega?"), T12 (relógios) e T14 (cobrança indevida). Nas três, menos de 3 avaliações passaram do limiar.
 
-Sem LLM, as perguntas fora do escopo são recusadas só pelo limiar: nenhuma avaliação fala de "capital da Austrália". Com o Claude, a análise de escopo barra essas perguntas antes da busca.
+Sem LLM, as perguntas fora do escopo são recusadas só pelo limiar: nenhuma avaliação fala de "capital da Austrália". Com o LLM, a análise de escopo barra essas perguntas antes da busca.
 
 <!-- AVALIACAO_LLM: 9.2 recuperação (precision@10, nDCG@10 por configuração), 9.3 fidelidade, 9.4 validação dos temas -->
-_As métricas de recuperação (precision@10 e nDCG@10 com juiz LLM, comparando busca densa, híbrida e híbrida com reranker), de fidelidade das respostas e de validação dos temas são geradas por `python -m src.evaluation.avaliar --juiz` e `python -m src.evaluation.avaliar_temas --llm`, que precisam da chave da API._
+_As métricas de recuperação (precision@10 e nDCG@10 com juiz LLM, comparando busca densa, híbrida e híbrida com reranker), de fidelidade das respostas e de validação dos temas são geradas por `python -m src.evaluation.avaliar --juiz` e `python -m src.evaluation.avaliar_temas --llm`._
 
 ## 10. Exemplos de perguntas e respostas
 
 <!-- EXEMPLOS_LLM: gerados em reports/exemplos_respostas.json -->
-_Os exemplos com resposta gerada entram aqui após a execução com a chave da API. Sem a chave, o [notebook 02](notebooks/02_pipeline_rag_passo_a_passo.ipynb) mostra cada etapa com saídas reais, até o contexto enviado ao modelo._
+_Os exemplos entram aqui após a execução da avaliação com o LLM local._
 
 ## 11. Decisões técnicas
 
 | # | Decisão | Alternativas | Por quê |
 |---|---|---|---|
 | D1 | Um documento por avaliação, sem chunking | Chunks de N tokens | Comentários de até 208 caracteres; a citação aponta a avaliação exata |
-| D2 | Embeddings locais (`multilingual-e5-base`) | Embeddings por API | Português, custo zero, reprodutível sem chave |
+| D2 | Embeddings locais (`multilingual-e5-base`) | Embeddings por API | Português, custo zero, reprodutível sem conta |
 | D3 | Busca exata em numpy em vez de banco vetorial | Chroma, pgvector, FAISS-HNSW | Com 36 mil vetores, a busca exata leva milissegundos, não perde vizinhos (índices aproximados perdem) e combina direto com o filtro do pandas. [`indice.py`](src/retrieval/indice.py) isola a escolha: trocar por um banco vetorial muda um arquivo. Com milhões de vetores, a troca passa a valer |
 | D4 | Busca híbrida (densa + BM25) com RRF | Só densa | Termos exatos ("correios", "nota fiscal") e sentido parecido com outras palavras se complementam; RRF dispensa calibrar escalas |
 | D5 | Reranker cross-encoder | Só similaridade de vetores | Lê pergunta e avaliação juntas; dá um score que serve de limiar para recusar |
@@ -361,23 +378,27 @@ _Os exemplos com resposta gerada entram aqui após a execução com a chave da A
 | D8 | Limiar calibrado em conjunto separado | Limiar fixo escolhido no olho | A taxa de recusa medida não fica otimista |
 | D9 | Recusa sem chamar o LLM quando falta evidência | Deixar o modelo decidir | O modelo não tem chance de improvisar sobre evidência fraca |
 | D10 | Saída JSON por esquema + verificação de citações | Texto livre | Insight e evidência ficam ligados; citação inventada é detectada |
-| D11 | Claude Opus 5.5 com `fallbacks: "default"` | Outros provedores, modelo local | Qualidade em português e em seguir regras de citação; o fallback evita erro se o classificador de segurança recusar |
+| D11 | LLM local: Qwen2.5 7B via Ollama | API paga (Claude, GPT) | Custo zero por pergunta e reprodutível sem conta nem cartão. O preço é a qualidade menor de um modelo de 7B, compensada por estrutura (D14, D15). O nome do modelo é configurável (`OLLAMA_MODEL`): trocar por um maior não muda o código |
 | D12 | Orquestração em código próprio | LangChain, LlamaIndex | Cada etapa visível e testável, como o enunciado pede ("demonstrar como ocorre") |
-| D13 | Modo "só recuperação" sem chave | Exigir chave | Quem avalia sem chave ainda vê a busca e as evidências funcionando |
+| D13 | Modo "só recuperação" sem LLM | Exigir o Ollama | Quem avalia sem o Ollama instalado ainda vê a busca e as evidências funcionando |
+| D14 | Filtros de metadados por regras ancoradas no texto | Extração pelo LLM | O modelo de 7B inventava recortes; regras são previsíveis, testadas e funcionam sem LLM |
+| D15 | Citações restritas por esquema; texto e números montados pelo código | Confiar no prompt | O modelo de 7B não citava no texto e somava percentuais. Com o esquema, citar um rótulo inexistente é impossível, e os números vêm da contagem |
 
 ## 12. Limitações
 
 1. **Base de texto enviesada para a insatisfação.** A nota 1 tem texto muito mais vezes que a nota 5 ([notebook 01](notebooks/01_exploracao_avaliacoes.ipynb)). Percentuais sobre avaliações com texto não representam todos os clientes; o sistema sempre informa o universo.
 2. **Temas por regras.** São transparentes, mas perdem formas de escrever fora do dicionário e erram em ironia. A qualidade medida está na seção 9.
-3. **Juiz e gerador são o mesmo modelo.** Pode favorecer o próprio estilo. Uma amostra dos julgamentos fica em `reports/julgamentos_para_revisar.csv` para revisão humana.
-4. **Conjunto de avaliação pequeno** (41 perguntas). Suficiente para comparar configurações, não para cravar uma taxa com precisão de uma casa decimal.
-5. **Dados de 2016 a 2018.** Os padrões descrevem aquele período.
-6. **O reranker não entende bem negação.** Para "problemas relacionados à entrega", ele pontua alto "Produto entregue sem problemas" (exemplo no notebook 02, etapa 4). O MMR e o prompt de geração reduzem o efeito, mas a evidência pode vir com ruído.
-7. **Avaliação antes da entrega.** Parte das avaliações foi escrita antes de o produto chegar ("ainda não recebi"), o que infla o tema "não entregue" em relação às entregas que de fato falharam.
+3. **Juiz e gerador são o mesmo modelo, e é um modelo de 7B.** Ele pode favorecer o próprio estilo e é um juiz menos confiável que um modelo grande. Uma amostra dos julgamentos fica em `reports/julgamentos_para_revisar.csv` para revisão humana.
+4. **Texto do modelo de 7B.** A estrutura garante citações válidas e números da contagem, mas o modelo ainda escreve quantificadores vagos ("muitos clientes relataram") e às vezes generaliza além do que as avaliações citadas dizem. A métrica de fidelidade (seção 9) mede isso.
+5. **Latência.** De 25 a 65 s por pergunta numa GTX 1060; mais em CPU.
+6. **Conjunto de avaliação pequeno** (41 perguntas). Suficiente para comparar configurações, não para cravar uma taxa com precisão de uma casa decimal.
+7. **Dados de 2016 a 2018.** Os padrões descrevem aquele período.
+8. **O reranker não entende bem negação.** Para "problemas relacionados à entrega", ele pontua alto "Produto entregue sem problemas" (exemplo no notebook 02, etapa 4). O MMR e o prompt de geração reduzem o efeito, mas a evidência pode vir com ruído.
+9. **Avaliação antes da entrega.** Parte das avaliações foi escrita antes de o produto chegar ("ainda não recebi"), o que infla o tema "não entregue" em relação às entregas que de fato falharam.
 
 ## 13. Como reproduzir
 
-Requisitos: Python 3.11 e cerca de 2 GB livres (modelos e índice). Não precisa de GPU nem de conta no Kaggle.
+Requisitos: Python 3.11, cerca de 7 GB livres (modelos, índice e LLM) e o [Ollama](https://ollama.com/download). Não precisa de conta no Kaggle nem de chave de API. Uma GPU com 6 GB acelera o LLM (24 de 29 camadas cabem numa GTX 1060); sem GPU ele roda em CPU, mais devagar.
 
 ```bash
 git clone https://github.com/leonardoaz98/tech-challenge-fase4.git
@@ -385,27 +406,30 @@ cd tech-challenge-fase4
 python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-cp .env.example .env        # e preencha ANTHROPIC_API_KEY (opcional, ver abaixo)
+ollama pull qwen2.5:7b      # LLM local, ~4,7 GB (uma vez); o Ollama precisa estar rodando
+cp .env.example .env        # opcional: outro modelo (OLLAMA_MODEL) ou endereço (OLLAMA_HOST)
 
 python -m src.run_pipeline           # baixa a base, monta documentos, temas, índice, calibra e avalia
 streamlit run app/streamlit_app.py   # interface
 python -m src.pipeline "Quais são os principais problemas relatados pelos clientes?"   # terminal
 ```
 
-| Etapa | Comando isolado | Precisa de chave? |
+| Etapa | Comando isolado | Precisa do Ollama? |
 |---|---|---|
 | Download da base | `python -m src.ingestion.baixar_dados` | Não |
 | Base de conhecimento | `python -m src.preprocessing.base_conhecimento` | Não |
 | Temas | `python -m src.temas.temas` | Não |
 | Índice vetorial | `python -m src.indexing.indexar` | Não |
 | Calibração do limiar | `python -m src.evaluation.calibrar_limiar` | Não |
-| Avaliação de recusa | `python -m src.evaluation.avaliar` | Não (com chave, usa o LLM) |
+| Avaliação de recusa | `python -m src.evaluation.avaliar` | Não (com o Ollama no ar, usa o LLM) |
 | Avaliação de recuperação e fidelidade | `python -m src.evaluation.avaliar --juiz` | Sim |
 | Validação dos temas | `python -m src.evaluation.avaliar_temas --llm` | Sim |
 
-**Sem chave da Anthropic** o sistema roda em modo "só recuperação": análise da pergunta por regras, busca, limiar e evidências, sem a resposta gerada.
+**Sem o Ollama no ar** o sistema roda em modo "só recuperação": análise da pergunta e filtros por regras, busca, limiar e evidências, sem a resposta gerada.
 
-<!-- CUSTO -->
+**Avaliação longa:** com o LLM local, a avaliação completa leva algumas horas numa GPU de 6 GB. Cada pergunta concluída fica salva em `reports/parcial/` (fora do Git). Se o processo cair, por exemplo por falta de memória, basta rodar o mesmo comando de novo para continuar de onde parou. Também dá para rodar uma etapa por vez: `python -m src.evaluation.avaliar --etapas recusa`, depois `recuperacao`, depois `fidelidade`.
+
+**Custo:** zero. Todos os modelos rodam localmente.
 
 ## 14. Estrutura do repositório
 

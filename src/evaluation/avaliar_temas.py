@@ -1,16 +1,16 @@
 """Valida a classificação de temas contra rótulos de referência.
 
-Passo 1 (sem chave): gera reports/temas_amostra.csv com 300 avaliações sorteadas
+Passo 1 (sem LLM): gera reports/temas_amostra.csv com 300 avaliações sorteadas
 (estratificadas por nota) e os temas que as regras atribuíram. O grupo preenche a
 coluna `temas_referencia` com os nomes dos temas corretos, separados por vírgula.
 
 Passo 2: calcula precisão e recall por tema contra a coluna preenchida.
-Com --llm, a coluna é preenchida pelo Claude (rótulo de referência automático);
+Com --llm, a coluna é preenchida pelo LLM local (rótulo de referência automático);
 a revisão humana continua recomendada (ver README §Limitações).
 
 Uso:
   python -m src.evaluation.avaliar_temas --amostra
-  python -m src.evaluation.avaliar_temas --llm       # rotula com o Claude e mede
+  python -m src.evaluation.avaliar_temas --llm       # rotula com o LLM local e mede
   python -m src.evaluation.avaliar_temas             # mede com a coluna já preenchida
 """
 
@@ -45,21 +45,28 @@ SYSTEM = "Você classifica avaliações de clientes de e-commerce em temas. Marq
     f"- {t.nome}: {t.rotulo} ({t.tipo})" for t in TEMAS
 )
 ESQUEMA = {
-    "type": "object", "additionalProperties": False, "required": ["itens"],
-    "properties": {"itens": {"type": "array", "items": {
-        "type": "object", "additionalProperties": False, "required": ["id", "temas"],
-        "properties": {"id": {"type": "string"}, "temas": {"type": "array", "items": {"type": "string", "enum": NOMES}}}}}},
+    "type": "object", "additionalProperties": False, "required": ["temas"],
+    "properties": {"temas": {"type": "array", "items": {"type": "string", "enum": NOMES}}},
 }  # fmt: skip
 
 
-def rotular_com_llm(amostra: pd.DataFrame, lote: int = 30) -> pd.DataFrame:
-    rotulos = {}
-    for i in range(0, len(amostra), lote):
-        parte = amostra.iloc[i : i + lote]
-        texto = "\n".join(f"[{r.review_id}] {r.texto}" for r in parte.itertuples())
-        dados, _ = gerar_json(SYSTEM, texto, ESQUEMA, esforco="low")
-        rotulos.update({x["id"]: ",".join(x["temas"]) for x in dados["itens"]})
-    amostra["temas_referencia"] = amostra["review_id"].map(rotulos).fillna("")
+def rotular_com_llm(amostra: pd.DataFrame) -> pd.DataFrame:
+    """Uma avaliação por chamada: com 14 temas possíveis, lotes grandes confundem um
+    modelo de 7B. ~300 chamadas curtas, alguns minutos com GPU. Cada rótulo é salvo em
+    reports/parcial/ e, se o processo cair, a próxima execução continua de onde parou."""
+    parcial = config.RELATORIOS / "parcial" / "temas_rotulos.json"
+    feito = json.loads(parcial.read_text(encoding="utf-8")) if parcial.exists() else {}
+    parcial.parent.mkdir(parents=True, exist_ok=True)
+    rotulos = []
+    for i, r in enumerate(amostra.itertuples(), 1):
+        if r.review_id not in feito:
+            dados, _ = gerar_json(SYSTEM, f"Avaliação: {r.texto}", ESQUEMA, max_tokens=256)
+            feito[r.review_id] = ",".join(dict.fromkeys(dados["temas"]))
+            parcial.write_text(json.dumps(feito, ensure_ascii=False), "utf-8")
+        rotulos.append(feito[r.review_id])
+        if i % 50 == 0:
+            log.info("%d/%d rotuladas", i, len(amostra))
+    amostra["temas_referencia"] = rotulos
     amostra.to_csv(AMOSTRA, index=False)
     return amostra
 

@@ -1,6 +1,6 @@
 """Reconstrói tudo do zero, na ordem: dados -> base -> temas -> índice -> calibração -> avaliação.
 
-As etapas sem LLM rodam sempre. As que usam o Claude só rodam com ANTHROPIC_API_KEY.
+As etapas sem LLM rodam sempre. As que usam o LLM só rodam com o Ollama no ar e o modelo baixado.
 
 Uso:
   python -m src.run_pipeline           # tudo que der com o que estiver configurado
