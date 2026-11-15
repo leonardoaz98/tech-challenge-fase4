@@ -1,7 +1,7 @@
 {
   "recusa": {
     "modo": "regras (sem LLM)",
-    "responde_quando_deve": 0.9,
+    "responde_quando_deve": 0.933,
     "recusa_fora_do_escopo": 1.0,
     "recusa_evidencia_insuficiente": 1.0,
     "por_pergunta": [
@@ -67,7 +67,7 @@
         "esperado": "responder",
         "status": "so_recuperacao",
         "acertou": true,
-        "max_score": 3.8577682971954346
+        "max_score": 3.85776686668396
       },
       {
         "id": "E09",
@@ -91,7 +91,7 @@
         "esperado": "responder",
         "status": "so_recuperacao",
         "acertou": true,
-        "max_score": -3.6172993183135986
+        "max_score": -3.617299795150757
       },
       {
         "id": "M03",
@@ -99,7 +99,7 @@
         "esperado": "responder",
         "status": "so_recuperacao",
         "acertou": true,
-        "max_score": -2.1364686489105225
+        "max_score": -1.461411476135254
       },
       {
         "id": "M04",
@@ -115,7 +115,7 @@
         "esperado": "responder",
         "status": "so_recuperacao",
         "acertou": true,
-        "max_score": 2.142591953277588
+        "max_score": -1.7578222751617432
       },
       {
         "id": "M06",
@@ -123,7 +123,7 @@
         "esperado": "responder",
         "status": "so_recuperacao",
         "acertou": true,
-        "max_score": -2.504314661026001
+        "max_score": -2.338610887527466
       },
       {
         "id": "M07",
@@ -225,9 +225,9 @@
         "id": "T12",
         "grupo": "tema",
         "esperado": "responder",
-        "status": "evidencia_insuficiente",
-        "acertou": false,
-        "max_score": -1.1028891801834106
+        "status": "so_recuperacao",
+        "acertou": true,
+        "max_score": -2.163695812225342
       },
       {
         "id": "T13",

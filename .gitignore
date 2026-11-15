@@ -22,3 +22,6 @@ PLANO_DE_ACAO_FASE4.*
 
 # Arquivos temporários do Office
 ~$*
+
+# Checkpoints da avaliação (retomada após queda)
+reports/parcial/

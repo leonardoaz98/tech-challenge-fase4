@@ -12,6 +12,7 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src import config  # noqa: E402
 from src.generation import llm  # noqa: E402
 from src.pipeline import responder  # noqa: E402
 from src.retrieval.filtros import Filtros  # noqa: E402
@@ -52,9 +53,9 @@ with st.sidebar:
     entrega = st.multiselect("Entrega", ["no_prazo", "atrasado", "nao_entregue"])
     st.divider()
     if llm.disponivel():
-        st.success("LLM: Claude (API Anthropic)")
+        st.success(f"LLM local: {config.MODELO_LLM} (Ollama)")
     else:
-        st.warning("Sem ANTHROPIC_API_KEY: só recuperação, sem resposta gerada.")
+        st.warning("Ollama indisponível: só recuperação, sem resposta gerada (ver README, seção 13).")
     st.caption(f"{len(idx.docs):,} avaliações na base de conhecimento".replace(",", "."))
 
 st.title("💬 Voz do Cliente")
@@ -117,6 +118,6 @@ if st.button("Perguntar", type="primary", disabled=not pergunta.strip()):
                 f"maior score do reranker: {b.max_score}"
             )
         if r.resposta:
-            st.markdown(f"**3. Geração** · citações válidas: {r.resposta.citacoes_validas} · inválidas removidas: {len(r.resposta.citacoes_invalidas)}")
+            st.markdown(f"**3. Geração** · citações válidas: {r.resposta.citacoes_validas} · inválidas removidas: {len(r.resposta.citacoes_invalidas)} · percentuais fora da tabela removidos: {len(r.resposta.numeros_removidos)}")
             st.text_area("Contexto enviado ao modelo", r.resposta.contexto, height=300)
         st.json({"tempos_s": r.tempos, "uso_llm": {"analise": a.uso, "resposta": r.resposta.uso if r.resposta else {}}})

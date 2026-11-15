@@ -31,6 +31,10 @@ MSG_INSUFICIENTE = (
     "Não encontrei avaliações suficientes para responder com segurança "
     "({n} avaliações relevantes; o mínimo é {minimo}). Tente ampliar os filtros ou reformular a pergunta."
 )
+MSG_SEM_ASSUNTO = (
+    "As avaliações mais parecidas com a pergunta não falam do assunto dela: só {n} tratam dele "
+    "explicitamente (mínimo {minimo}). A base não tem evidência suficiente para responder."
+)
 MSG_UNIVERSO = (
     "Os filtros deixaram só {n} avaliações com texto (mínimo {minimo} para uma contagem de temas "
     "fazer sentido). Amplie o período, a categoria ou a faixa de nota."
@@ -79,12 +83,11 @@ def responder(pergunta: str, filtros_interface: Filtros | None = None, usar_llm:
 
     # 1. Processamento da pergunta
     t = time.time()
+    # Filtros marcados na tela têm prioridade sobre os extraídos do texto.
     if usar_llm:
-        analise = analisar_com_llm(pergunta, idx.categorias)
-        if filtros_interface and not filtros_interface.vazio():
-            analise.filtros = filtros_interface  # o que o usuário marcou na tela tem prioridade
+        analise = analisar_com_llm(pergunta, idx.categorias, filtros_interface)
     else:
-        analise = analisar_por_regras(pergunta, filtros_interface)
+        analise = analisar_por_regras(pergunta, filtros_interface, idx.categorias)
     tempos["analise"] = round(time.time() - t, 2)
 
     if not analise.no_escopo:
@@ -118,7 +121,7 @@ def responder(pergunta: str, filtros_interface: Filtros | None = None, usar_llm:
 
     busca.evidencias = evidencias
     if not usar_llm:
-        msg = "Modo só recuperação (sem chave da API): abaixo, as avaliações mais relevantes para a pergunta."
+        msg = "Modo só recuperação (Ollama indisponível): abaixo, as avaliações mais relevantes para a pergunta."
         return ResultadoRAG(pergunta, "so_recuperacao", msg, analise, busca, frequencias, tempos=tempos)
 
     # 3. Geração
@@ -126,8 +129,10 @@ def responder(pergunta: str, filtros_interface: Filtros | None = None, usar_llm:
     resposta = gerar(pergunta, analise.filtros.descrever(), evidencias, frequencias)
     tempos["geracao"] = round(time.time() - t, 2)
     tempos["total"] = round(time.time() - t0, 2)
-    status = "respondida" if resposta.suficiente else "evidencia_insuficiente"
-    return ResultadoRAG(pergunta, status, resposta.texto, analise, busca, frequencias, resposta, tempos)
+    if resposta.suficiente:
+        return ResultadoRAG(pergunta, "respondida", resposta.texto, analise, busca, frequencias, resposta, tempos)
+    msg = MSG_SEM_ASSUNTO.format(n=len(resposta.sobre_o_assunto), minimo=config.MIN_EVIDENCIAS)
+    return ResultadoRAG(pergunta, "evidencia_insuficiente", msg, analise, busca, frequencias, resposta, tempos)
 
 
 def imprimir(r: ResultadoRAG) -> None:
@@ -147,7 +152,7 @@ def imprimir(r: ResultadoRAG) -> None:
         for i, e in enumerate(r.busca.evidencias, 1):
             print(f"  [R{i}] ({e.score_rerank:+.2f}) nota {e.nota} | {e.categoria} | {e.status_entrega}: {e.texto[:150]}")
     if r.resposta:
-        print(f"\ncitações válidas={r.resposta.citacoes_validas} inválidas={r.resposta.citacoes_invalidas} lacunas: {r.resposta.lacunas}")
+        print(f"\ncitações válidas={r.resposta.citacoes_validas} inválidas={r.resposta.citacoes_invalidas} números removidos={r.resposta.numeros_removidos} lacunas: {r.resposta.lacunas}")
     print("tempos:", json.dumps(r.tempos))
 
 

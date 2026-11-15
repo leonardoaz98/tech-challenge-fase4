@@ -24,7 +24,7 @@ Quem escreve o código abre o pull request; o grupo revisa antes do merge. Nada 
 ## 3. Antes de abrir o pull request
 
     python -m pytest -q tests
-    python -m src.run_pipeline          # do zero; com ANTHROPIC_API_KEY roda também a avaliação com LLM
+    python -m src.run_pipeline          # do zero; com o Ollama no ar roda também a avaliação com LLM
     python -m src.checar_resultados     # funil e temas iguais à referência?
 
 - Se o funil ou os temas mudaram **de propósito**, grave a referência nova (`python -m src.checar_resultados --gravar`) num commit próprio, explicando o motivo.
