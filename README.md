@@ -7,10 +7,11 @@ Tech Challenge da Fase 4 da pós em IA (FIAP). Base: [Brazilian E-Commerce Publi
 **Resultados principais**
 
 - **36.038 avaliações** viram documentos pesquisáveis, cada uma com nota, período, categoria e status da entrega.
-- **Recusa honesta (modo sem LLM):** recusa 100% das perguntas fora do escopo e sem evidência; responde 93% das que deveria responder (28 de 30). Detalhes na [seção 9](#9-avaliação).
+- **Recusa honesta:** com o LLM, responde as 30 perguntas que deveria responder e recusa as 11 fora do escopo ou sem evidência (100% nas três medidas). Sem o LLM, responde 29 de 30. Detalhes na [seção 9](#9-avaliação).
 - **Frequência de verdade:** "principais problemas" é contado nas 36 mil avaliações, não nas 15 recuperadas. Com nota 1 ou 2, *produto não entregue* aparece em 32,6% dos textos.
 - **Custo zero:** o LLM roda localmente (Qwen2.5 7B via [Ollama](https://ollama.com)), sem chave nem cobrança por pergunta. Busca e índice rodam em CPU; não precisa de conta no Kaggle.
-<!-- RESULTADOS_LLM -->
+- **Recuperação:** precisão@10 de 0,82 no pipeline completo, contra 0,61 da busca só densa. Nas perguntas com recorte de metadados, 0,86 contra 0,49.
+- **Fidelidade:** 85% dos 142 insights gerados são sustentados pelas avaliações que citam, segundo o juiz LLM. Nenhuma das 745 citações aponta para uma avaliação que não estava no contexto.
 
 | | |
 |---|---|
@@ -167,10 +168,10 @@ Cada avaliação é **um documento inteiro, sem chunking**: nenhum comentário p
 |---|---|
 | Tempo para gerar os 36.038 embeddings | 28 min (uma vez; refeito só se a base mudar) |
 | Tamanho do índice | 110,7 MB |
-| Busca + reranking de uma pergunta exploratória | ~1,3 s |
-| Pergunta de frequência (busca + temas + exemplos) | ~2,4 s |
+| Busca + reranking de uma pergunta exploratória | ~2 s |
+| Pergunta de frequência (busca + temas + exemplos) | ~2,8 s |
 
-Os tempos de consulta foram medidos com os modelos já carregados e não incluem as chamadas ao LLM. Com o LLM (GTX 1060 6 GB), uma pergunta leva de 25 a 65 s: ~9 s na análise e de 10 a 55 s na geração. A primeira pergunta de cada processo leva ~2 min a mais, para carregar os modelos.
+Os tempos de consulta foram medidos com os modelos já carregados e não incluem as chamadas ao LLM. Com o LLM (GTX 1060 6 GB, 10 camadas do modelo na GPU), uma pergunta respondida leva de 62 a 157 s, com mediana de 100 s: ~19 s na análise, ~5 s na recuperação com as consultas reescritas e de 38 a 131 s na geração (medido nas 30 perguntas respondidas da avaliação). As recusas saem antes, sem a etapa de geração. A primeira pergunta de cada processo leva ~2 min a mais, para carregar os modelos.
 
 ## 5. Estratégia do pipeline RAG
 
@@ -203,8 +204,8 @@ Para cada consulta: busca densa (cosseno exato contra os 36 mil vetores) e BM25,
 ### 5.3 Seleção dos conteúdos mais relevantes
 
 1. **Deduplicação:** textos idênticos contam uma vez.
-2. **Reranking:** os 60 primeiros da fusão passam pelo cross-encoder, que lê pergunta e avaliação juntas. O cross-encoder recebe o **núcleo** da pergunta ("a nota fiscal"), e não o enunciado inteiro ("O que os clientes falam sobre a nota fiscal?"). Avaliações são curtas e não repetem a moldura "o que os clientes relatam sobre", e o enunciado inteiro derrubava o score de avaliações claramente relevantes: "Faltou a nota fiscal" ficava em −3,3 ([`nucleo.py`](src/retrieval/nucleo.py)).
-3. **Limiar de relevância:** só conta como evidência quem passa do limiar calibrado (seção 7).
+2. **Reranking:** os 60 primeiros da fusão passam pelo cross-encoder, que lê pergunta e avaliação juntas. O cross-encoder recebe o **núcleo** da pergunta ("a nota fiscal"), e não o enunciado inteiro ("O que os clientes falam sobre a nota fiscal?"). Avaliações são curtas e não repetem a moldura "o que os clientes relatam sobre", e o enunciado inteiro derrubava o score de avaliações claramente relevantes: "Faltou a nota fiscal" ficava em −3,3 ([`nucleo.py`](src/retrieval/nucleo.py)). Pedidos de evidência ("quais avaliações sustentam a conclusão de que existem problemas recorrentes de...") também perdem a moldura. Além do núcleo, cada avaliação é pontuada contra as consultas reescritas na análise (5.1).
+3. **Limiar de relevância:** o portão usa **só o score contra o núcleo**: a pergunta só é respondida se pelo menos 3 avaliações passam do limiar calibrado (seção 7). Passado o portão, a seleção usa o melhor score entre o núcleo e as reescritas. Os dois papéis são separados de propósito. Contra "problemas relacionados à entrega", o reranker dava score baixo a relatos concretos como "demorou muito para chegar", e as reescritas ("atraso na entrega") os recuperam. Já deixar as reescritas decidirem o portão fazia a pergunta sobre entregas por drone passar com 15 "evidências", porque o LLM a reescreve em termos genéricos de entrega.
 4. **MMR:** escolhe 15 avaliações equilibrando relevância (70%) e diversidade (30%), para o contexto não ser 15 variações de "chegou atrasado".
 
 ### 5.4 Perguntas de frequência
@@ -292,7 +293,7 @@ Regra: responde se pelo menos 3 avaliações têm score do reranker acima do lim
 
 As três que o limiar sozinho não recusa: "salário médio de um entregador", "traduza bom dia" e "restaurante da loja". As duas primeiras estão fora do escopo e são barradas antes, pela análise da pergunta com o LLM. A terceira é barrada na geração: o modelo aponta quais avaliações falam do assunto, e nenhuma fala de restaurante. A pergunta "responder" de menor score (tamanho das roupas, −1,58) ficou perto do limiar: as duas classes se sobrepõem, e o limiar não separa tudo sozinho. Por isso são três barreiras, não uma. Dados por pergunta em [`reports/calibracao_limiar.json`](reports/calibracao_limiar.json).
 
-**Uma correção feita durante o desenvolvimento.** Na primeira versão, o reranker comparava o enunciado inteiro com as avaliações. Com ela, o sistema sem LLM recusava 53% das perguntas que deveria responder no conjunto de avaliação, inclusive perguntas do enunciado. Duas mudanças: o reranker passou a usar o núcleo da pergunta, e perguntas de frequência passaram a depender da contagem de temas (acima). O limiar foi recalibrado **só** no conjunto de calibração. A mudança foi motivada pelo resultado no conjunto de avaliação, e registramos isso aqui porque deixa a medida da seção 9 um pouco otimista.
+**Uma correção feita durante o desenvolvimento.** Na primeira versão, o reranker comparava o enunciado inteiro com as avaliações. Com ela, o sistema sem LLM recusava 53% das perguntas que deveria responder no conjunto de avaliação, inclusive perguntas do enunciado. Duas mudanças: o reranker passou a usar o núcleo da pergunta, e perguntas de frequência passaram a depender da contagem de temas (acima). O limiar foi recalibrado **só** no conjunto de calibração. A mudança foi motivada pelo resultado no conjunto de avaliação, e registramos isso aqui porque deixa a medida da seção 9 um pouco otimista. O mesmo vale para uma segunda correção, feita depois da primeira rodada com o LLM: E06 e E09, duas perguntas do enunciado, eram recusadas. A correção (núcleo dos pedidos de evidência e scores separados para portão e seleção, seção 5.3) não mudou o limiar, que continua −1,75 na recalibração.
 
 ## 8. Desafio adicional: metadados
 
@@ -344,20 +345,84 @@ O enunciado avalia principalmente **recuperar bem** e **responder coerente com a
 
 ### 9.1 Recusa: o sistema sabe quando não sabe?
 
-Modo sem LLM (análise da pergunta por regras, sem decisão de escopo). Arquivo: [`reports/avaliacao_sem_llm.json`](reports/avaliacao_sem_llm.json).
+Arquivos: [`reports/avaliacao.json`](reports/avaliacao.json) (com LLM) e [`reports/avaliacao_sem_llm.json`](reports/avaliacao_sem_llm.json) (análise da pergunta por regras, sem decisão de escopo).
 
-| Métrica | Resultado |
-|---|---|
-| Responde quando deve (30 perguntas) | **93%** (28) |
-| Recusa fora do escopo (6) | **100%** |
-| Recusa sem evidência suficiente (5) | **100%** |
+| Métrica | Com LLM | Sem LLM |
+|---|---|---|
+| Responde quando deve (30 perguntas) | **100%** (30) | 97% (29) |
+| Recusa fora do escopo (6) | **100%** | 100% |
+| Recusa sem evidência suficiente (5) | **100%** | 100% |
 
-As 2 recusas indevidas: E09 ("Quais avaliações sustentam a conclusão de que existem problemas recorrentes relacionados ao prazo de entrega?") e T14 (cobrança indevida). Nas duas, menos de 3 avaliações passaram do limiar.
+Sem LLM, a única recusa indevida é T14 (cobrança indevida): só 2 avaliações passam do limiar. Com o LLM, as consultas reescritas trazem outros candidatos para o reranking, e a pergunta passa.
 
 Sem LLM, as perguntas fora do escopo são recusadas só pelo limiar: nenhuma avaliação fala de "capital da Austrália". Com o LLM, a análise de escopo barra essas perguntas antes da busca.
 
-<!-- AVALIACAO_LLM: 9.2 recuperação (precision@10, nDCG@10 por configuração), 9.3 fidelidade, 9.4 validação dos temas -->
-_As métricas de recuperação (precision@10 e nDCG@10 com juiz LLM, comparando busca densa, híbrida e híbrida com reranker), de fidelidade das respostas e de validação dos temas são geradas por `python -m src.evaluation.avaliar --juiz` e `python -m src.evaluation.avaliar_temas --llm`._
+### 9.2 Recuperação: as avaliações certas chegam ao contexto?
+
+Para cada uma das 30 perguntas que devem ser respondidas, quatro configurações recuperam 10 avaliações cada. Todas as avaliações recuperadas por alguma configuração (de 22 a 35 por pergunta) são julgadas juntas pelo juiz LLM, uma vez (*pooling*), com nota 0 (não ajuda), 1 (relacionada) ou 2 (responde diretamente). Precisão@10 conta as notas ≥ 1; o nDCG@10 usa a nota graduada.
+
+| Configuração | O que entra | Precisão@10 | nDCG@10 | Precisão@10 nas perguntas de metadados |
+|---|---|---|---|---|
+| A | Busca densa com o enunciado | 0,61 | 0,69 | 0,49 |
+| B | A + BM25, fundidos por RRF | 0,60 | 0,75 | 0,47 |
+| C | B + reranker | 0,66 | 0,75 | 0,46 |
+| **D** | **Pipeline completo:** C + consultas reescritas, núcleo, filtros de metadados, limiar e MMR | **0,82** | **0,82** | **0,86** |
+
+Por grupo de pergunta (precisão@10):
+
+| Grupo | A | B | C | D |
+|---|---|---|---|---|
+| Enunciado (9) | 0,64 | 0,47 | 0,56 | **0,84** |
+| Metadados (7) | 0,49 | 0,47 | 0,46 | **0,86** |
+| Temas específicos (14) | 0,65 | 0,74 | **0,83** | 0,79 |
+
+O que os números mostram:
+
+- **Os filtros de metadados são o maior ganho.** Sem eles, "reclamações de compras de novembro de 2017" traz reclamações de qualquer mês, e nenhuma busca por texto corrige isso. Foi o que justificou o desafio adicional (seção 8).
+- **O reranker ajuda nas perguntas de tema** (de 0,74 para 0,83), em que o assunto é concreto ("nota fiscal", "produto falsificado").
+- **Nas perguntas do enunciado, o que resolve é a reescrita.** Elas são longas e genéricas ("quais avaliações sustentam a conclusão de que..."), e comparar o enunciado inteiro piora a busca híbrida. As consultas reescritas e o núcleo levam de 0,56 para 0,84.
+- **Nos temas, D fica um pouco abaixo de C** (0,79 contra 0,83). O MMR troca relevância por diversidade de propósito, e a reescrita às vezes alarga o assunto. A diferença é de 2 ou 3 perguntas e está dentro do ruído de um conjunto deste tamanho.
+
+O juiz é o modelo de 7B que gera as respostas (limitação 3). 60 julgamentos sorteados estão em [`reports/julgamentos_para_revisar.csv`](reports/julgamentos_para_revisar.csv), com uma coluna para a nota humana. Todos os julgamentos estão em [`reports/julgamentos_relevancia.json`](reports/julgamentos_relevancia.json).
+
+### 9.3 Fidelidade: a resposta diz só o que as evidências sustentam?
+
+Para cada uma das 30 respostas, o juiz recebe o mesmo contexto do gerador e os insights com as avaliações que cada um cita, e dá um veredicto por insight.
+
+| Medida | Resultado |
+|---|---|
+| Insights sustentados pelas avaliações citadas (142 insights) | **85,2%** |
+| Parcialmente sustentados | 7,0% |
+| Não sustentados | 7,7% |
+| Citações válidas | 745 |
+| Citações de avaliações fora do contexto | **0** |
+
+A citação inválida é impossível por construção: o esquema JSON só aceita rótulos que existem no contexto (D15), e o código confere de novo. A parte que falha é o texto do modelo. Os insights não sustentados costumam generalizar além do que foi citado, como "atrasos são mais comuns em avaliações com nota baixa" sobre um conjunto que só tem relatos de atraso (exemplo na seção 10.4).
+
+### 9.4 Validação dos temas usados na contagem
+
+As frequências da seção 5.4 vêm de regras de texto. Para medir essas regras, 300 avaliações (60 por nota) foram rotuladas pelo LLM, um sim/não por tema, e comparadas com as regras. Arquivos: [`reports/temas_validacao.json`](reports/temas_validacao.json) e [`reports/temas_amostra.csv`](reports/temas_amostra.csv), com o texto, os temas das regras e os do LLM lado a lado.
+
+| Tema | Precisão | Recall | Casos na amostra |
+|---|---|---|---|
+| Atraso na entrega | 0,97 | 0,55 | 51 |
+| Produto não entregue | 0,70 | 0,65 | 43 |
+| Pedido incompleto | 0,94 | 0,42 | 40 |
+| Qualidade ruim | 0,71 | 0,29 | 42 |
+| Defeito ou avaria | 0,71 | 0,50 | 30 |
+| Produto errado ou diferente do anunciado | 0,78 | 0,27 | 26 |
+| Atendimento e falta de retorno | 0,62 | 0,22 | 23 |
+| Devolução, troca ou reembolso | 0,52 | 0,92 | 13 |
+| Embalagem | 0,73 | 0,80 | 10 |
+| Preço ou frete | 0,31 | 0,57 | 7 |
+| Entrega rápida ou no prazo | 0,80 | 0,90 | 63 |
+| Produto bom ou como anunciado | 0,83 | 0,53 | 55 |
+| Recomenda a loja ou compraria de novo | 0,83 | 0,88 | 33 |
+| Bom atendimento | 0,50 | 0,50 | 4 |
+
+Como ler: **as regras erram pouco quando marcam um tema, mas deixam de marcar muitos casos.** Em sete dos oito temas de problema, a precisão vai de 0,62 a 0,97 e o recall de 0,22 a 0,65. As contagens da seção 5.4 são, portanto, um **piso**: "32,6% citam produto não entregue" quer dizer "pelo menos". Os temas de recall mais baixo (qualidade ruim, produto errado, atendimento) são os mais subestimados e podem estar mais acima no ranking do que aparecem. Duas exceções vão no sentido contrário: *devolução* e *preço ou frete* têm precisão baixa e tendem a ser superestimados (preço ou frete com só 7 casos na amostra).
+
+A referência é um modelo de 7B, não um humano: parte da discordância é erro do LLM. A coluna de rótulos no CSV permite que o grupo revise e recalcule com `python -m src.evaluation.avaliar_temas`.
 
 ## 10. Exemplos de perguntas e respostas
 
@@ -387,10 +452,10 @@ _Os exemplos entram aqui após a execução da avaliação com o LLM local._
 ## 12. Limitações
 
 1. **Base de texto enviesada para a insatisfação.** A nota 1 tem texto muito mais vezes que a nota 5 ([notebook 01](notebooks/01_exploracao_avaliacoes.ipynb)). Percentuais sobre avaliações com texto não representam todos os clientes; o sistema sempre informa o universo.
-2. **Temas por regras.** São transparentes, mas perdem formas de escrever fora do dicionário e erram em ironia. A qualidade medida está na seção 9.
+2. **Temas por regras.** São transparentes, mas perdem formas de escrever fora do dicionário e erram em ironia. O recall medido fica entre 0,22 e 0,65 em sete dos oito temas de problema (seção 9.4), então as frequências são um piso.
 3. **Juiz e gerador são o mesmo modelo, e é um modelo de 7B.** Ele pode favorecer o próprio estilo e é um juiz menos confiável que um modelo grande. Uma amostra dos julgamentos fica em `reports/julgamentos_para_revisar.csv` para revisão humana.
 4. **Texto do modelo de 7B.** A estrutura garante citações válidas e números da contagem, mas o modelo ainda escreve quantificadores vagos ("muitos clientes relataram") e às vezes generaliza além do que as avaliações citadas dizem. A métrica de fidelidade (seção 9) mede isso.
-5. **Latência.** De 25 a 65 s por pergunta numa GTX 1060; mais em CPU.
+5. **Latência.** De 1 a 2,5 min por pergunta respondida numa GTX 1060 com 10 camadas do modelo na GPU (mediana de 100 s); mais em CPU. Quase todo o tempo é geração.
 6. **Conjunto de avaliação pequeno** (41 perguntas). Suficiente para comparar configurações, não para cravar uma taxa com precisão de uma casa decimal.
 7. **Dados de 2016 a 2018.** Os padrões descrevem aquele período.
 8. **O reranker não entende bem negação.** Para "problemas relacionados à entrega", ele pontua alto "Produto entregue sem problemas" (exemplo no notebook 02, etapa 4). O MMR e o prompt de geração reduzem o efeito, mas a evidência pode vir com ruído.
