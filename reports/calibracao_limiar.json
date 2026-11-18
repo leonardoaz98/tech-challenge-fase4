@@ -1,0 +1,379 @@
+{
+  "regra": "responde se pelo menos 3 avaliações têm score do reranker >= limiar",
+  "limiar_escolhido": -1.75,
+  "faixa_empatada": [
+    -1.75,
+    -1.75
+  ],
+  "acuracia_balanceada": 0.85,
+  "score_da_3a_melhor_avaliacao": {
+    "responder": {
+      "O que os clientes falam sobre o tamanho das roupas?": -1.58,
+      "Há reclamações sobre produtos que vieram sem manual de instruções?": 2.21,
+      "O que os clientes dizem sobre a cor do produto?": 3.8,
+      "Como os clientes descrevem entregas que chegaram antes do prazo?": 4.16,
+      "O que os clientes relatam sobre brinquedos?": -1.38,
+      "Há elogios ao vendedor?": 1.81,
+      "O que os clientes relatam sobre produtos com voltagem errada?": 1.11,
+      "O que os clientes dizem sobre perfumes?": -0.59,
+      "Há reclamações sobre cartuchos de impressora?": 2.03,
+      "O que os clientes falam sobre o prazo de entrega estimado?": 0.11
+    },
+    "recusar": {
+      "Qual é a taxa de juros do Banco Central?": -2.65,
+      "Quem ganhou a Copa do Mundo de 2002?": -4.65,
+      "Como faço um bolo de chocolate?": -2.17,
+      "Qual o salário médio de um entregador?": 0.75,
+      "Traduza bom dia para o inglês.": 0.04,
+      "Os clientes elogiam a loja física em Paris?": -2.41,
+      "O que os clientes acham do serviço de streaming da loja?": -1.93,
+      "Como os clientes avaliam o test drive de carros elétricos?": -1.99,
+      "Há relatos sobre o seguro viagem vendido pela loja?": -2.13,
+      "O que os clientes acham do restaurante da loja?": -0.6
+    }
+  },
+  "grade": [
+    {
+      "limiar": -6.0,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": -5.75,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": -5.5,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": -5.25,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": -5.0,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": -4.75,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": -4.5,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.1,
+      "acuracia_balanceada": 0.55
+    },
+    {
+      "limiar": -4.25,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.1,
+      "acuracia_balanceada": 0.55
+    },
+    {
+      "limiar": -4.0,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.1,
+      "acuracia_balanceada": 0.55
+    },
+    {
+      "limiar": -3.75,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.1,
+      "acuracia_balanceada": 0.55
+    },
+    {
+      "limiar": -3.5,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.1,
+      "acuracia_balanceada": 0.55
+    },
+    {
+      "limiar": -3.25,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.1,
+      "acuracia_balanceada": 0.55
+    },
+    {
+      "limiar": -3.0,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.1,
+      "acuracia_balanceada": 0.55
+    },
+    {
+      "limiar": -2.75,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.1,
+      "acuracia_balanceada": 0.55
+    },
+    {
+      "limiar": -2.5,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.2,
+      "acuracia_balanceada": 0.6
+    },
+    {
+      "limiar": -2.25,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.3,
+      "acuracia_balanceada": 0.65
+    },
+    {
+      "limiar": -2.0,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.5,
+      "acuracia_balanceada": 0.75
+    },
+    {
+      "limiar": -1.75,
+      "responde_quando_deve": 1.0,
+      "recusa_quando_deve": 0.7,
+      "acuracia_balanceada": 0.85
+    },
+    {
+      "limiar": -1.5,
+      "responde_quando_deve": 0.9,
+      "recusa_quando_deve": 0.7,
+      "acuracia_balanceada": 0.8
+    },
+    {
+      "limiar": -1.25,
+      "responde_quando_deve": 0.8,
+      "recusa_quando_deve": 0.7,
+      "acuracia_balanceada": 0.75
+    },
+    {
+      "limiar": -1.0,
+      "responde_quando_deve": 0.8,
+      "recusa_quando_deve": 0.7,
+      "acuracia_balanceada": 0.75
+    },
+    {
+      "limiar": -0.75,
+      "responde_quando_deve": 0.8,
+      "recusa_quando_deve": 0.7,
+      "acuracia_balanceada": 0.75
+    },
+    {
+      "limiar": -0.5,
+      "responde_quando_deve": 0.7,
+      "recusa_quando_deve": 0.8,
+      "acuracia_balanceada": 0.75
+    },
+    {
+      "limiar": -0.25,
+      "responde_quando_deve": 0.7,
+      "recusa_quando_deve": 0.8,
+      "acuracia_balanceada": 0.75
+    },
+    {
+      "limiar": 0.0,
+      "responde_quando_deve": 0.7,
+      "recusa_quando_deve": 0.8,
+      "acuracia_balanceada": 0.75
+    },
+    {
+      "limiar": 0.25,
+      "responde_quando_deve": 0.6,
+      "recusa_quando_deve": 0.9,
+      "acuracia_balanceada": 0.75
+    },
+    {
+      "limiar": 0.5,
+      "responde_quando_deve": 0.6,
+      "recusa_quando_deve": 0.9,
+      "acuracia_balanceada": 0.75
+    },
+    {
+      "limiar": 0.75,
+      "responde_quando_deve": 0.6,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.8
+    },
+    {
+      "limiar": 1.0,
+      "responde_quando_deve": 0.6,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.8
+    },
+    {
+      "limiar": 1.25,
+      "responde_quando_deve": 0.5,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.75
+    },
+    {
+      "limiar": 1.5,
+      "responde_quando_deve": 0.5,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.75
+    },
+    {
+      "limiar": 1.75,
+      "responde_quando_deve": 0.5,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.75
+    },
+    {
+      "limiar": 2.0,
+      "responde_quando_deve": 0.4,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.7
+    },
+    {
+      "limiar": 2.25,
+      "responde_quando_deve": 0.2,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.6
+    },
+    {
+      "limiar": 2.5,
+      "responde_quando_deve": 0.2,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.6
+    },
+    {
+      "limiar": 2.75,
+      "responde_quando_deve": 0.2,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.6
+    },
+    {
+      "limiar": 3.0,
+      "responde_quando_deve": 0.2,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.6
+    },
+    {
+      "limiar": 3.25,
+      "responde_quando_deve": 0.2,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.6
+    },
+    {
+      "limiar": 3.5,
+      "responde_quando_deve": 0.2,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.6
+    },
+    {
+      "limiar": 3.75,
+      "responde_quando_deve": 0.2,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.6
+    },
+    {
+      "limiar": 4.0,
+      "responde_quando_deve": 0.1,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.55
+    },
+    {
+      "limiar": 4.25,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 4.5,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 4.75,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 5.0,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 5.25,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 5.5,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 5.75,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 6.0,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 6.25,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 6.5,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 6.75,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 7.0,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 7.25,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 7.5,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 7.75,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    },
+    {
+      "limiar": 8.0,
+      "responde_quando_deve": 0.0,
+      "recusa_quando_deve": 1.0,
+      "acuracia_balanceada": 0.5
+    }
+  ]
+}

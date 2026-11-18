@@ -4,9 +4,13 @@ Tudo que muda o resultado fica aqui, num lugar só, para a execução ser reprod
 e para cada parâmetro ter uma justificativa rastreável no README.
 """
 
+import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 RAIZ = Path(__file__).resolve().parents[1]
+load_dotenv(RAIZ / ".env")  # OLLAMA_HOST / OLLAMA_MODEL opcionais
 
 # --- Pastas ---------------------------------------------------------------
 DADOS_BRUTOS = RAIZ / "data" / "raw"
@@ -51,11 +55,19 @@ CANDIDATOS_RERANK = 60  # quantos candidatos fundidos vão para o reranker
 EVIDENCIAS_CONTEXTO = 15  # avaliações enviadas ao LLM
 MMR_LAMBDA = 0.7  # 1 = só relevância, 0 = só diversidade
 # Limiares sobre o score do reranker (logit). Calibrados em reports/calibracao_limiar.json.
-LIMIAR_RELEVANCIA = 0.0  # abaixo disso a avaliação não conta como evidência
+LIMIAR_RELEVANCIA = -1.75  # calibrado em reports/calibracao_limiar.json; abaixo disso a avaliação não conta como evidência
 MIN_EVIDENCIAS = 3  # menos que isso = evidência insuficiente
+MIN_UNIVERSO_FREQUENCIA = 30  # abaixo disso, cada avaliação mexe 3+ pontos percentuais na contagem de temas
 
-# --- LLM (API da Anthropic) -----------------------------------------------
-MODELO_LLM = "claude-opus-5-5"
-ESFORCO_ANALISE = "low"  # entender a pergunta é tarefa simples
-ESFORCO_RESPOSTA = "medium"  # síntese com citações
-BETA_FALLBACK = "server-side-fallback-2026-07-01"
+# --- LLM local (Ollama) ---------------------------------------------------
+# Variáveis de ambiente (ou .env) permitem trocar o modelo ou o endereço sem mudar código.
+OLLAMA_URL = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+MODELO_LLM = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+CONTEXTO_LLM = 8192  # tokens; 15 evidências + tabela de temas + instruções cabem com folga
+TIMEOUT_LLM = 600  # segundos; em CPU sem GPU uma resposta pode levar minutos
+# Em GPUs com pouca VRAM livre (ex.: 6 GB compartilhados no WSL), limitar as camadas
+# na GPU evita o "cudaMalloc out of memory". Sem a variável, o Ollama decide sozinho.
+_num_gpu = os.getenv("OLLAMA_NUM_GPU")
+NUM_GPU_LLM = int(_num_gpu) if _num_gpu else None
+_num_batch = os.getenv("OLLAMA_NUM_BATCH")
+NUM_BATCH_LLM = int(_num_batch) if _num_batch else None
