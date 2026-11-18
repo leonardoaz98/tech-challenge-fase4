@@ -7,7 +7,7 @@ Tech Challenge da Fase 4 da pós em IA (FIAP). Base: [Brazilian E-Commerce Publi
 **Resultados principais**
 
 - **36.038 avaliações** viram documentos pesquisáveis, cada uma com nota, período, categoria e status da entrega.
-- **Recusa honesta (modo sem LLM):** recusa 100% das perguntas fora do escopo e sem evidência; responde 90% das que deveria responder (27 de 30). Detalhes na [seção 9](#9-avaliação).
+- **Recusa honesta (modo sem LLM):** recusa 100% das perguntas fora do escopo e sem evidência; responde 93% das que deveria responder (28 de 30). Detalhes na [seção 9](#9-avaliação).
 - **Frequência de verdade:** "principais problemas" é contado nas 36 mil avaliações, não nas 15 recuperadas. Com nota 1 ou 2, *produto não entregue* aparece em 32,6% dos textos.
 - **Custo zero:** o LLM roda localmente (Qwen2.5 7B via [Ollama](https://ollama.com)), sem chave nem cobrança por pergunta. Busca e índice rodam em CPU; não precisa de conta no Kaggle.
 <!-- RESULTADOS_LLM -->
@@ -348,11 +348,11 @@ Modo sem LLM (análise da pergunta por regras, sem decisão de escopo). Arquivo:
 
 | Métrica | Resultado |
 |---|---|
-| Responde quando deve (30 perguntas) | **90%** (27) |
+| Responde quando deve (30 perguntas) | **93%** (28) |
 | Recusa fora do escopo (6) | **100%** |
 | Recusa sem evidência suficiente (5) | **100%** |
 
-As 3 recusas indevidas: E09 ("Quais avaliações sustentam a conclusão de que existem problemas recorrentes relacionados ao prazo de entrega?"), T12 (relógios) e T14 (cobrança indevida). Nas três, menos de 3 avaliações passaram do limiar.
+As 2 recusas indevidas: E09 ("Quais avaliações sustentam a conclusão de que existem problemas recorrentes relacionados ao prazo de entrega?") e T14 (cobrança indevida). Nas duas, menos de 3 avaliações passaram do limiar.
 
 Sem LLM, as perguntas fora do escopo são recusadas só pelo limiar: nenhuma avaliação fala de "capital da Austrália". Com o LLM, a análise de escopo barra essas perguntas antes da busca.
 
@@ -374,7 +374,7 @@ _Os exemplos entram aqui após a execução da avaliação com o LLM local._
 | D4 | Busca híbrida (densa + BM25) com RRF | Só densa | Termos exatos ("correios", "nota fiscal") e sentido parecido com outras palavras se complementam; RRF dispensa calibrar escalas |
 | D5 | Reranker cross-encoder | Só similaridade de vetores | Lê pergunta e avaliação juntas; dá um score que serve de limiar para recusar |
 | D6 | Pré-filtro de metadados | Pós-filtro | Pergunta sobre categoria pequena não volta vazia |
-| D7 | Temas por regras na base inteira para frequência | Contar nas recuperadas; LLM classificando 36 mil avaliações | Contar nas recuperadas é estatisticamente errado; LLM na base inteira custaria dezenas de dólares por execução. Regras são auditáveis e validadas (seção 9) |
+| D7 | Temas por regras na base inteira para frequência | Contar nas recuperadas; LLM classificando 36 mil avaliações | Contar nas recuperadas é estatisticamente errado; o LLM local leva ~20 s por avaliação numa GPU de 6 GB, ou ~200 h para as 36 mil, a cada mudança na base. Regras são auditáveis e validadas (seção 9) |
 | D8 | Limiar calibrado em conjunto separado | Limiar fixo escolhido no olho | A taxa de recusa medida não fica otimista |
 | D9 | Recusa sem chamar o LLM quando falta evidência | Deixar o modelo decidir | O modelo não tem chance de improvisar sobre evidência fraca |
 | D10 | Saída JSON por esquema + verificação de citações | Texto livre | Insight e evidência ficam ligados; citação inventada é detectada |
@@ -398,7 +398,7 @@ _Os exemplos entram aqui após a execução da avaliação com o LLM local._
 
 ## 13. Como reproduzir
 
-Requisitos: Python 3.11, cerca de 7 GB livres (modelos, índice e LLM) e o [Ollama](https://ollama.com/download). Não precisa de conta no Kaggle nem de chave de API. Uma GPU com 6 GB acelera o LLM (24 de 29 camadas cabem numa GTX 1060); sem GPU ele roda em CPU, mais devagar.
+Requisitos: Python 3.11, cerca de 7 GB livres (modelos, índice e LLM) e o [Ollama](https://ollama.com/download). Não precisa de conta no Kaggle nem de chave de API. Uma GPU com 6 GB acelera o LLM (24 de 29 camadas cabem numa GTX 1060); sem GPU ele roda em CPU, mais devagar. No WSL2, onde a VRAM é compartilhada com o Windows, pode ser preciso limitar as camadas na GPU com `OLLAMA_NUM_GPU` (ver `.env.example`).
 
 ```bash
 git clone https://github.com/leonardoaz98/tech-challenge-fase4.git
