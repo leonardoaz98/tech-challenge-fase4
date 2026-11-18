@@ -1,7 +1,7 @@
 {
   "recusa": {
     "modo": "regras (sem LLM)",
-    "responde_quando_deve": 0.933,
+    "responde_quando_deve": 0.967,
     "recusa_fora_do_escopo": 1.0,
     "recusa_evidencia_insuficiente": 1.0,
     "por_pergunta": [
@@ -73,9 +73,9 @@
         "id": "E09",
         "grupo": "enunciado",
         "esperado": "responder",
-        "status": "evidencia_insuficiente",
-        "acertou": false,
-        "max_score": -0.5020387172698975
+        "status": "so_recuperacao",
+        "acertou": true,
+        "max_score": 1.4296331405639648
       },
       {
         "id": "M01",

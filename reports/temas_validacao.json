@@ -1,0 +1,76 @@
+{
+  "amostra": 300,
+  "referencia": "ver coluna temas_referencia em temas_amostra.csv",
+  "por_tema": {
+    "atraso": {
+      "precisao": 0.97,
+      "recall": 0.55,
+      "suporte": 51
+    },
+    "nao_entregue": {
+      "precisao": 0.7,
+      "recall": 0.65,
+      "suporte": 43
+    },
+    "incompleto": {
+      "precisao": 0.94,
+      "recall": 0.42,
+      "suporte": 40
+    },
+    "produto_errado": {
+      "precisao": 0.78,
+      "recall": 0.27,
+      "suporte": 26
+    },
+    "defeito_avaria": {
+      "precisao": 0.71,
+      "recall": 0.5,
+      "suporte": 30
+    },
+    "qualidade_ruim": {
+      "precisao": 0.71,
+      "recall": 0.29,
+      "suporte": 42
+    },
+    "atendimento_ruim": {
+      "precisao": 0.62,
+      "recall": 0.22,
+      "suporte": 23
+    },
+    "devolucao_reembolso": {
+      "precisao": 0.52,
+      "recall": 0.92,
+      "suporte": 13
+    },
+    "embalagem": {
+      "precisao": 0.73,
+      "recall": 0.8,
+      "suporte": 10
+    },
+    "frete_preco": {
+      "precisao": 0.31,
+      "recall": 0.57,
+      "suporte": 7
+    },
+    "entrega_rapida": {
+      "precisao": 0.8,
+      "recall": 0.9,
+      "suporte": 63
+    },
+    "produto_bom": {
+      "precisao": 0.83,
+      "recall": 0.53,
+      "suporte": 55
+    },
+    "recomenda": {
+      "precisao": 0.83,
+      "recall": 0.88,
+      "suporte": 33
+    },
+    "atendimento_bom": {
+      "precisao": 0.5,
+      "recall": 0.5,
+      "suporte": 4
+    }
+  }
+}
