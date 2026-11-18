@@ -13,9 +13,6 @@ data/index/
 logs/
 
 # Arquivos locais de trabalho (fora do repositório público)
-.claude/
-CLAUDE.md
-CLAUDE.local.md
 .mcp.json
 *.pdf
 PLANO_DE_ACAO_FASE4.*
