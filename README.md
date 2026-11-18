@@ -166,7 +166,7 @@ Cada avaliação é **um documento inteiro, sem chunking**: nenhum comentário p
 
 | Medida | Valor (CPU, notebook comum) |
 |---|---|
-| Tempo para gerar os 36.038 embeddings | 28 min (uma vez; refeito só se a base mudar) |
+| Tempo para gerar os 36.038 embeddings | 28 a 45 min, conforme a CPU (uma vez; refeito só se a base mudar) |
 | Tamanho do índice | 110,7 MB |
 | Busca + reranking de uma pergunta exploratória | ~2 s |
 | Pergunta de frequência (busca + temas + exemplos) | ~2,8 s |
@@ -620,7 +620,7 @@ Status: **recusada: fora do escopo**
 
 ## 13. Como reproduzir
 
-Requisitos: Python 3.11, cerca de 7 GB livres (modelos, índice e LLM) e o [Ollama](https://ollama.com/download). Não precisa de conta no Kaggle nem de chave de API. Uma GPU com 6 GB acelera o LLM (24 de 29 camadas cabem numa GTX 1060); sem GPU ele roda em CPU, mais devagar. No WSL2, onde a VRAM é compartilhada com o Windows, pode ser preciso limitar as camadas na GPU com `OLLAMA_NUM_GPU` (ver `.env.example`).
+Requisitos: Python 3.11, cerca de 7 GB livres (modelos, índice e LLM) e o [Ollama](https://ollama.com/download). Não precisa de conta no Kaggle nem de chave de API. Uma GPU com 6 GB acelera o LLM (24 de 29 camadas cabem numa GTX 1060); sem GPU ele roda em CPU, mais devagar. No WSL2, onde a VRAM é compartilhada com o Windows, pode ser preciso limitar as camadas na GPU com `OLLAMA_NUM_GPU` (ver `.env.example`). Se a VM do WSL travar ou reiniciar enquanto o LLM responde (no `journalctl -k` aparecem erros `dxgkio_reserve_gpu_va`), rode o LLM só na CPU: `CUDA_VISIBLE_DEVICES=-1 ollama serve` e `OLLAMA_NUM_GPU=0`. Fica mais lento, mas estável.
 
 ```bash
 git clone https://github.com/leonardoaz98/tech-challenge-fase4.git
@@ -646,6 +646,8 @@ python -m src.pipeline "Quais são os principais problemas relatados pelos clien
 | Avaliação de recusa | `python -m src.evaluation.avaliar` | Não (com o Ollama no ar, usa o LLM) |
 | Avaliação de recuperação e fidelidade | `python -m src.evaluation.avaliar --juiz` | Sim |
 | Validação dos temas | `python -m src.evaluation.avaliar_temas --llm` | Sim |
+
+**Reprodução verificada:** num clone limpo do GitHub, `python -m src.run_pipeline` sem o Ollama levou 48 min em CPU (Ryzen 7 1700X, WSL2, pico de 2,8 GB de RAM), quase tudo no índice. O funil, os temas, os embeddings, a calibração do limiar e a avaliação de recusa sem LLM saíram idênticos aos versionados.
 
 **Sem o Ollama no ar** o sistema roda em modo "só recuperação": análise da pergunta e filtros por regras, busca, limiar e evidências, sem a resposta gerada.
 
