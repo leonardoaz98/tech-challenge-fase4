@@ -200,7 +200,7 @@ Seja rigoroso: números e generalizações ("a maioria", "frequentemente") só s
 
 ESQUEMA_FIDELIDADE = {
     "type": "object", "additionalProperties": False, "required": ["veredictos"],
-    "properties": {"veredictos": {"type": "array", "items": {
+    "properties": {"veredictos": {"type": "array", "maxItems": 5, "items": {
         "type": "object", "additionalProperties": False, "required": ["insight", "veredicto"],
         "properties": {"insight": {"type": "string"},
                        "veredicto": {"type": "string", "enum": ["sustentado", "parcial", "nao_sustentado"]}}}}},

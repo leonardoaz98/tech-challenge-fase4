@@ -44,9 +44,13 @@ def gerar_amostra(n: int = 300) -> pd.DataFrame:
 SYSTEM = "Você classifica avaliações de clientes de e-commerce em temas. Marque todos os temas que a avaliação menciona de forma explícita, e só esses.\n\nTemas:\n" + "\n".join(
     f"- {t.nome}: {t.rotulo} ({t.tipo})" for t in TEMAS
 )
+# Um booleano por tema, e não uma lista de temas: com lista, o modelo de 7B às vezes
+# entra em laço repetindo os mesmos itens até estourar o limite de tokens (e os
+# rótulos salvos antes do laço ser detectado vinham contaminados). Com campos fixos
+# a saída tem sempre o mesmo tamanho e o modelo decide tema a tema.
 ESQUEMA = {
-    "type": "object", "additionalProperties": False, "required": ["temas"],
-    "properties": {"temas": {"type": "array", "items": {"type": "string", "enum": NOMES}}},
+    "type": "object", "additionalProperties": False, "required": NOMES,
+    "properties": {n: {"type": "boolean"} for n in NOMES},
 }  # fmt: skip
 
 
@@ -54,14 +58,14 @@ def rotular_com_llm(amostra: pd.DataFrame) -> pd.DataFrame:
     """Uma avaliação por chamada: com 14 temas possíveis, lotes grandes confundem um
     modelo de 7B. ~300 chamadas curtas, alguns minutos com GPU. Cada rótulo é salvo em
     reports/parcial/ e, se o processo cair, a próxima execução continua de onde parou."""
-    parcial = config.RELATORIOS / "parcial" / "temas_rotulos.json"
+    parcial = config.RELATORIOS / "parcial" / "temas_rotulos_v2.json"
     feito = json.loads(parcial.read_text(encoding="utf-8")) if parcial.exists() else {}
     parcial.parent.mkdir(parents=True, exist_ok=True)
     rotulos = []
     for i, r in enumerate(amostra.itertuples(), 1):
         if r.review_id not in feito:
-            dados, _ = gerar_json(SYSTEM, f"Avaliação: {r.texto}", ESQUEMA, max_tokens=256)
-            feito[r.review_id] = ",".join(dict.fromkeys(dados["temas"]))
+            dados, _ = gerar_json(SYSTEM, f"Avaliação: {r.texto}", ESQUEMA, max_tokens=400)
+            feito[r.review_id] = ",".join(n for n in NOMES if dados[n])
             parcial.write_text(json.dumps(feito, ensure_ascii=False), "utf-8")
         rotulos.append(feito[r.review_id])
         if i % 50 == 0:

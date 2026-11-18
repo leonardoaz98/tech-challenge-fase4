@@ -61,7 +61,7 @@ def _esquema() -> dict:
             "assunto": {"type": "string", "enum": ASSUNTOS},
             "tipo": {"type": "string", "enum": ["frequencia", "exploratoria", "evidencia"]},
             "tipo_tema": {"type": "string", "enum": ["problema", "elogio", "todos"]},
-            "consultas": {"type": "array", "items": {"type": "string"}},
+            "consultas": {"type": "array", "maxItems": 3, "items": {"type": "string"}},
         },
     }
 
