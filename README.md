@@ -426,8 +426,165 @@ A referência é um modelo de 7B, não um humano: parte da discordância é erro
 
 ## 10. Exemplos de perguntas e respostas
 
-<!-- EXEMPLOS_LLM: gerados em reports/exemplos_respostas.json -->
-_Os exemplos entram aqui após a execução da avaliação com o LLM local._
+Respostas reais do sistema (Qwen2.5 7B local), sem edição, tiradas de [`reports/exemplos_respostas.json`](reports/exemplos_respostas.json), que tem as 41 perguntas do conjunto de avaliação com análise, evidências, contexto e tempos. Os exemplos incluem defeitos do texto gerado, apontados em "o que observar".
+
+### 10.1 Frequência sobre a base inteira (pergunta do enunciado)
+
+**Pergunta (E01):** Quais são os principais problemas relatados pelos clientes?
+
+Status: **respondida** · 108 s
+
+> Os principais problemas relatados pelos clientes são atrasos na entrega, produtos incompletos, e qualidade ruim dos produtos.
+>
+> Temas mais citados entre 36.038 avaliações com texto (contagem na base, não só nas recuperadas):
+> 1. Produto não entregue: 4144 avaliações (11,5%)
+> 2. Atraso na entrega: 2232 avaliações (6,2%)
+> 3. Devolução, troca ou reembolso: 1963 avaliações (5,4%)
+> 4. Pedido incompleto: 1582 avaliações (4,4%)
+> 5. Qualidade ruim: 1456 avaliações (4,0%)
+>
+> - Muitos clientes relataram atrasos na entrega. [R1][R2][R3][R4][R5][R6]
+> - Existem reclamações sobre produtos entregues incompletos. [R10][R11][R12]
+> - A qualidade do produto é um problema comum. [R13][R14][R15]
+> - Alguns clientes tiveram dificuldades com devoluções e reembolsos. [R7]
+> - Atrasos na entrega também foram relatados como problemas. [R6]
+
+<details><summary>Avaliações citadas (8 de 14 citações; as 2 primeiras de cada insight)</summary>
+
+| | Nota | Categoria | Entrega | Compra | Avaliação |
+|---|---|---|---|---|---|
+| R1 | 1 | automotivo | entregue com atraso | 2017-11-26 | Produto não entregue |
+| R2 | 1 | utilidades domesticas | não entregue | 2017-08-19 | PRODUTO NÃO RECEBIDO |
+| R10 | 1 | pet shop | entregue no prazo | 2017-07-05 | Pedido entregue incompleto. |
+| R11 | 1 | beleza saude | entregue no prazo | 2017-11-24 | Chegou meu pedido incompleto |
+| R13 | 3 | pet shop | entregue no prazo | 2018-07-11 | qualidade ruim do produto |
+| R14 | 1 | utilidades domesticas | entregue no prazo | 2017-04-03 | Produto de péssima qualidade |
+| R7 | 3 | esporte lazer | entregue no prazo | 2018-08-02 | Devolução. Quero devolver e ter meu reembolso |
+| R6 | 3 | eletronicos | entregue no prazo | 2017-07-23 | Atrasou a entrega |
+
+</details>
+
+*O que observar:* O resumo de abertura (escrito pelo modelo) cita "atrasos" primeiro, mas a contagem põe *produto não entregue* no topo, e o primeiro insight junta avaliações de não entrega sob "atrasos". A tabela de números é montada pelo código e está certa; o texto livre do modelo de 7B é a parte menos confiável (limitação 4).
+
+### 10.2 Frequência com filtro de metadados
+
+**Pergunta (M01):** Quais são os principais problemas relatados nas avaliações com nota baixa?
+
+Status: **respondida** · filtros: `nota_max = 2` · 126 s
+
+> Os principais problemas relatados nas avaliações com nota baixa são atraso na entrega, produto não entregue, entrega incompleta, defeito ou avaria no produto e problemas com devolução e reembolso.
+>
+> Temas mais citados entre 10.543 avaliações com texto (contagem na base, não só nas recuperadas):
+> 1. Produto não entregue: 3437 avaliações (32,6%)
+> 2. Devolução, troca ou reembolso: 1543 avaliações (14,6%)
+> 3. Atraso na entrega: 1416 avaliações (13,4%)
+> 4. Pedido incompleto: 1160 avaliações (11,0%)
+> 5. Defeito ou avaria: 829 avaliações (7,9%)
+>
+> - Atraso na entrega é um problema comum. [R2][R3][R4][R6][R10][R12][R13][R16][R22][R23][R24]
+> - Produto não entregue é um problema frequente. [R1][R3][R7][R8][R17][R18][R20][R21][R27]
+> - Entrega incompleta é um problema relatado. [R25][R26][R27]
+> - Defeito ou avaria no produto é um problema. [R29][R30]
+> - Problemas com devolução e reembolso são mencionados. [R14][R19][R20]
+
+<details><summary>Avaliações citadas (9 de 28 citações; as 2 primeiras de cada insight)</summary>
+
+| | Nota | Categoria | Entrega | Compra | Avaliação |
+|---|---|---|---|---|---|
+| R2 | 2 | eletronicos | entregue com atraso | 2018-05-20 | Atraso. Produto não chegou no prazo |
+| R3 | 2 | sem categoria | não entregue | 2017-03-01 | Produto não chegou no prazo |
+| R1 | 1 | cama mesa banho | entregue no prazo | 2018-02-06 | Demorou muito pra entregar. |
+| R25 | 1 | pet shop | entregue no prazo | 2017-07-05 | Pedido entregue incompleto. |
+| R26 | 1 | beleza saude | entregue no prazo | 2017-11-24 | Chegou meu pedido incompleto |
+| R29 | 1 | instrumentos musicais | entregue no prazo | 2017-06-20 | ProdutO errado e quebrado |
+| R30 | 1 | eletronicos | entregue no prazo | 2018-01-13 | Produto avariado, quebrado |
+| R14 | 1 | brinquedos | entregue no prazo | 2017-10-18 | Dei nota baixa pois sao dois pedidos e o outro do aparelho celular veio faltando 1 e até agora não recebi 😡 |
+| R19 | 1 | utilidades domesticas | entregue no prazo | 2017-12-18 | solicito a devolucao do produto |
+
+</details>
+
+*O que observar:* O filtro `nota ≤ 2` veio das regras ("nota baixa"), e a contagem é refeita só nesse recorte: *produto não entregue* sobe de 11,5% para 32,6%.
+
+### 10.3 Tema específico, com rastreabilidade
+
+**Pergunta (T09):** O que os clientes falam sobre a nota fiscal?
+
+Status: **respondida** · 103 s
+
+> Muitos clientes relataram não ter recebido a nota fiscal, o que é um problema comum em diferentes categorias de produtos.
+>
+> - Muitos clientes relataram não ter recebido a nota fiscal. [R1][R2][R3][R4][R6][R8][R9][R10][R11][R12][R13][R15]
+> - A falta de nota fiscal é um problema comum, afetando clientes de diferentes categorias de produtos. [R1][R2][R3][R4][R6][R8][R9][R10][R11][R12][R13][R15]
+> - Algumas pessoas relataram que a falta de nota fiscal afetou a garantia do produto. [R3]
+> - Há casos em que a nota fiscal foi enviada sem o produto. [R4]
+> - Um cliente relatou que a nota fiscal foi enviada sem o produto. [R4]
+
+<details><summary>Avaliações citadas (4 de 27 citações; as 2 primeiras de cada insight)</summary>
+
+| | Nota | Categoria | Entrega | Compra | Avaliação |
+|---|---|---|---|---|---|
+| R1 | 3 | construcao ferramentas construcao | entregue no prazo | 2018-01-06 | Não recebi a nota fiscal. Favor providenciar. |
+| R2 | 4 | relogios presentes | entregue no prazo | 2018-06-07 | Boa. Não recebi a nota fiscal do produto. Preciso da nota. |
+| R3 | 4 | beleza saude | entregue no prazo | 2018-04-21 | Bom. Só não recebi a nota fiscal. Assim eu perdi a garantia. |
+| R4 | 1 | beleza saude | entregue no prazo | 2018-07-18 | Não recebi meu produto. Recebi a nota fiscal sem o meu produto, o status da entrega diz que já foi entregue. Mas me entregaram apenas a nota fiscal. |
+
+</details>
+
+*O que observar:* Cada insight aponta as avaliações que o sustentam. O modelo repete um insight (o quarto e o quinto dizem a mesma coisa sobre R4), um defeito de redação que não afeta as citações.
+
+### 10.4 Pedido explícito de evidências (pergunta do enunciado)
+
+**Pergunta (E09):** Quais avaliações sustentam a conclusão de que existem problemas recorrentes relacionados ao prazo de entrega?
+
+Status: **respondida** · 92 s
+
+> Existem problemas recorrentes com o prazo de entrega, com várias avaliações relatando atrasos e até mesmo não entrega do produto.
+>
+> - Existem reclamações consistentes sobre atrasos na entrega. [R1][R4][R6][R7][R8][R10][R15]
+> - Atrasos são relatados para diferentes categorias de produtos. [R1][R4][R6][R7][R8][R10][R15]
+> - Atrasos são mais comuns em avaliações com notas baixas. [R1][R4][R6][R7][R8][R10][R15]
+> - Há casos de entregas que não ocorreram. [R12]
+> - A demora na entrega é um problema recorrente. [R1][R4][R6][R7][R8][R10][R15]
+
+<details><summary>Avaliações citadas (3 de 29 citações; as 2 primeiras de cada insight)</summary>
+
+| | Nota | Categoria | Entrega | Compra | Avaliação |
+|---|---|---|---|---|---|
+| R1 | 3 | moveis decoracao | entregue com atraso | 2017-09-09 | Não recebi o produto no prazo prometido. |
+| R4 | 1 | moveis escritorio | entregue com atraso | 2017-10-31 | entrega muito atrasada. |
+| R12 | 2 | perfumaria | não entregue | 2017-12-06 | muita demora na entrega |
+
+</details>
+
+*O que observar:* O sistema lista avaliações com relatos concretos de atraso, que é o que a pergunta pede. O terceiro insight ("atrasos são mais comuns em avaliações com notas baixas") generaliza além das evidências: as 7 avaliações citadas são todas de atraso, então não há com o que comparar, e entre as recuperadas há relatos de atraso com nota 4 e 5 que o modelo não citou. É o tipo de insight que a métrica de fidelidade marca como não sustentado (seção 9.3).
+
+### 10.5 Evidência insuficiente: recusa
+
+**Pergunta (I01):** O que os clientes acham das entregas feitas por drone?
+
+Status: **recusada: evidência insuficiente**
+
+> Não encontrei avaliações suficientes para responder com segurança (1 avaliações relevantes; o mínimo é 3). Tente ampliar os filtros ou reformular a pergunta.
+
+<details><summary>A única avaliação acima do limiar</summary>
+
+| Nota | Categoria | Avaliação |
+|---|---|---|
+| 2 | market place | Chegou bem antes do prazo previsto, porém,para o drone H18 entrada não foi compatível. A entrada do meu drone é a JST. Existe algum adaptador para ser adquirido para a ulitização do produto comprado? |
+
+</details>
+
+*O que observar:* Só uma avaliação menciona drone, e ela fala de um adaptador, não da entrega. Abaixo do mínimo de 3, o sistema recusa sem chamar o LLM para gerar.
+
+### 10.6 Fora do escopo: recusa
+
+**Pergunta (F02):** Qual é a capital da Austrália?
+
+Status: **recusada: fora do escopo**
+
+> Esta pergunta está fora do que a base de avaliações de clientes consegue responder. A pergunta busca informações geográficas sobre a capital de um país. (assunto: conhecimento_geral)
+
+*O que observar:* A análise da pergunta classifica o assunto como conhecimento geral e recusa antes da busca.
 
 ## 11. Decisões técnicas
 
