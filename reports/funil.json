@@ -1,0 +1,51 @@
+{
+  "avaliacoes_na_base": {
+    "linhas": 99224,
+    "review_ids": 98410
+  },
+  "sem_texto": {
+    "removidas": 56537,
+    "motivo": "Sem título nem comentário: só a nota. Continuam nas estatísticas de nota, fora da base de texto."
+  },
+  "review_id_repetido": {
+    "removidas": 317,
+    "motivo": "O mesmo review_id aparece em mais de um pedido com o mesmo texto. Mantido 1 documento (pedido mais antigo); n_pedidos guarda quantos eram."
+  },
+  "texto_curto_demais": {
+    "removidas": 6332,
+    "motivo": "Menos de 3 palavras: não explicam o porquê da nota.",
+    "exemplos_mais_comuns": {
+      "muito bom": 446,
+      "bom": 377,
+      "recomendo": 343,
+      "ótimo": 266,
+      "otimo": 235,
+      "excelente": 204,
+      "super recomendo": 133,
+      "ok": 122,
+      "boa": 113,
+      "tudo ok": 74
+    }
+  },
+  "base_de_conhecimento": {
+    "documentos": 36038,
+    "pedidos_sem_itens_sem_categoria": 530,
+    "por_nota": {
+      "1": 8486,
+      "2": 2057,
+      "3": 3238,
+      "4": 5059,
+      "5": 17198
+    },
+    "por_status_entrega": {
+      "no_prazo": 30695,
+      "atrasado": 3579,
+      "nao_entregue": 1764
+    },
+    "periodo_avaliacoes": [
+      "2016-10-02",
+      "2018-08-31"
+    ],
+    "palavras_mediana": 10.0
+  }
+}
