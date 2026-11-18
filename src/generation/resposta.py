@@ -50,7 +50,8 @@ def _esquema(n_evidencias: int) -> dict:
         "required": ["assunto", "avaliacoes_sobre_o_assunto", "insights", "resumo", "lacunas"],
         "properties": {
             "assunto": {"type": "string"},
-            "avaliacoes_sobre_o_assunto": {"type": "array", "items": rotulo},
+            # maxItems nas listas: sem teto, o modelo pode repetir itens em laço até o limite de tokens
+            "avaliacoes_sobre_o_assunto": {"type": "array", "maxItems": n_evidencias, "items": rotulo},
             "insights": {
                 "type": "array",
                 "maxItems": 5,
@@ -58,7 +59,7 @@ def _esquema(n_evidencias: int) -> dict:
                     "type": "object",
                     "additionalProperties": False,
                     "required": ["insight", "evidencias"],
-                    "properties": {"insight": {"type": "string"}, "evidencias": {"type": "array", "minItems": 1, "items": rotulo}},
+                    "properties": {"insight": {"type": "string"}, "evidencias": {"type": "array", "minItems": 1, "maxItems": n_evidencias, "items": rotulo}},
                 },
             },
             "resumo": {"type": "string"},
