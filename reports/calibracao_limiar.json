@@ -21,10 +21,10 @@
     },
     "recusar": {
       "Qual é a taxa de juros do Banco Central?": -2.65,
-      "Quem ganhou a Copa do Mundo de 2002?": -4.65,
+      "Quem ganhou a Copa do Mundo de 2002?": -4.89,
       "Como faço um bolo de chocolate?": -2.17,
       "Qual o salário médio de um entregador?": 0.75,
-      "Traduza bom dia para o inglês.": 0.04,
+      "Traduza bom dia para o inglês.": 0.18,
       "Os clientes elogiam a loja física em Paris?": -2.41,
       "O que os clientes acham do serviço de streaming da loja?": -1.93,
       "Como os clientes avaliam o test drive de carros elétricos?": -1.99,
@@ -66,8 +66,8 @@
     {
       "limiar": -4.75,
       "responde_quando_deve": 1.0,
-      "recusa_quando_deve": 0.0,
-      "acuracia_balanceada": 0.5
+      "recusa_quando_deve": 0.1,
+      "acuracia_balanceada": 0.55
     },
     {
       "limiar": -4.5,

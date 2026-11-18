@@ -102,8 +102,9 @@ def buscar(
     restringir: set[str] | None = None,
 ) -> ResultadoBusca:
     """`consultas[0]` é a pergunta original; as demais são reescritas/expansões.
-    O reranker julga cada candidata contra o núcleo da pergunta original
-    (src/retrieval/nucleo.py), o mesmo texto usado na calibração do limiar.
+    O limiar de relevância é aplicado ao score contra o núcleo da pergunta original
+    (src/retrieval/nucleo.py), o mesmo usado na calibração; a ordem das evidências usa
+    o maior score entre o núcleo e as reescritas.
     `restringir`: só busca entre esses review_ids (usado nos exemplos por tema)."""
     filtros = filtros or Filtros()
     idx = carregar()
@@ -112,8 +113,12 @@ def buscar(
         m &= idx.docs["review_id"].isin(restringir)
     permitidos = np.flatnonzero(m.to_numpy())
 
+    # O núcleo também vira consulta: com as reescritas do LLM, as avaliações que falam do
+    # assunto com as palavras da pergunta ("tive problemas com a entrega") ficavam de fora.
+    alvo = nucleo(consultas[0])
+    consultas_busca = list(dict.fromkeys([c for c in consultas if c.strip()] + [alvo]))
     listas_densas, listas_bm25 = [], []
-    for vetor, consulta in zip(codificar_consultas(consultas), consultas):
+    for vetor, consulta in zip(codificar_consultas(consultas_busca), consultas_busca):
         listas_densas.append(idx.busca_densa(vetor, permitidos, config.CANDIDATOS_DENSO))
         if usar_bm25:
             listas_bm25.append(idx.busca_bm25(consulta, permitidos, config.CANDIDATOS_BM25))
@@ -129,7 +134,7 @@ def buscar(
     candidatos = ordenados[: config.CANDIDATOS_RERANK]
 
     resultado = ResultadoBusca(
-        consultas=consultas,
+        consultas=consultas_busca,
         filtros=filtros,
         universo=len(permitidos),
         candidatos_denso=len({p for lst in listas_densas for p, _ in lst}),
@@ -140,15 +145,30 @@ def buscar(
         return resultado
 
     if usar_rerank:
-        alvo = nucleo(consultas[0])
-        pares = [(alvo, idx.docs.at[p, "texto"]) for p in candidatos]
-        scores = dict(zip(candidatos, map(float, _reranker().predict(pares, batch_size=32))))
+        # Dois scores do reranker, com papéis diferentes:
+        # - contra o núcleo: decide SE há evidência (é o score do limiar calibrado);
+        # - o maior entre núcleo e reescritas: decide QUAIS avaliações entram no contexto.
+        # Só com o núcleo ("problemas relacionados à entrega"), relatos concretos
+        # ("demorou muito para chegar", sem a palavra "problemas") ficavam abaixo do limiar
+        # e negações ("entregue sem problemas") acima. Só com as reescritas, palavras
+        # genéricas delas ("entrega", "eficiente") faziam perguntas sem evidência
+        # (entrega por drone) passarem do limiar.
+        alvos = list(dict.fromkeys([alvo] + [c for c in consultas[1:] if c.strip()]))
+        textos = [idx.docs.at[p, "texto"] for p in candidatos]
+        pares = [(a, t) for a in alvos for t in textos]
+        brutos = np.asarray(_reranker().predict(pares, batch_size=32), dtype=float).reshape(len(alvos), len(candidatos))
+        score_nucleo = dict(zip(candidatos, map(float, brutos[0])))
+        scores = dict(zip(candidatos, map(float, brutos.max(axis=0))))
+        resultado.max_score = max(score_nucleo.values())
     else:
-        scores = {p: fundido[p] for p in candidatos}
-    resultado.max_score = max(scores.values())
+        scores = score_nucleo = {p: fundido[p] for p in candidatos}
+        resultado.max_score = max(scores.values())
 
     if usar_rerank and limiar is not None:
-        relevantes = [p for p in candidatos if scores[p] >= limiar]
+        relevantes = [p for p in candidatos if score_nucleo[p] >= limiar]
+        if len(relevantes) >= config.MIN_EVIDENCIAS:
+            # Há evidência: a seleção pode usar também quem só pontua alto nas reescritas.
+            relevantes = [p for p in candidatos if scores[p] >= limiar]
         resultado.descartadas_limiar = len(candidatos) - len(relevantes)
     else:
         relevantes = candidatos
